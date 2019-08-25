@@ -1,4 +1,5 @@
-import time
+#!/usr/bin/python
+"""API Client"""
 
 import requests
 from requests.compat import urljoin
@@ -18,7 +19,7 @@ class TwitchAPIClient():
 
     def channel_is_live(self, channel_id):
         """Check if a channel is live by ID.
-        
+
         Args:
             channel_id -- integer ID to check
 
@@ -43,7 +44,7 @@ class TwitchAPIClient():
 
     def _request_get(self, path, params=None):
         """Perform a HTTP GET request.
-        
+
         Args:
             path -- Path to append on default api path.
             params -- Extra parameters to append on
@@ -59,5 +60,5 @@ class TwitchAPIClient():
             print("Got status " + str(response.status_code))
 
         response.raise_for_status()
-        
+
         return response.json()

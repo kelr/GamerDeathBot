@@ -1,14 +1,14 @@
 #!/usr/bin/python
+"""IRC Server Socket Connection Class"""
 
 import socket
 import time
-from threading import Lock
 
-import env
+import consts
 
 def _check_conn(func):
     """Decorator to check that a connection is established before doing anything
-    
+
     Args:
         func -- Function object to wrap
     Returns:
@@ -17,8 +17,7 @@ def _check_conn(func):
     def wrap(*args, **kwargs):
         if not args[0].is_connected:
             raise Exception
-        else:
-            return func(*args, **kwargs)
+        return func(*args, **kwargs)
     return wrap
 
 class SocketConnection():
@@ -33,25 +32,25 @@ class SocketConnection():
         """Initializes connection to the Twitch servers."""
         if not self.is_connected:
             self._sock = socket.socket()
-            self._sock.connect((env.HOST, env.PORT))
+            self._sock.connect((consts.HOST, consts.PORT))
             self.is_connected = True
 
-            self.send("PASS " + env.PASS)
-            self.send("NICK " + env.USER)
-            for chan in env.TARGET_CHANNELS:
+            self.send("PASS " + consts.PASS)
+            self.send("NICK " + consts.USER)
+            for chan in consts.TARGET_CHANNELS:
                 self.send("JOIN " + chan)
 
     @_check_conn
     def send(self, msg):
         """Send a message on the socket. Will attempt reconnection if socket conn is lost.
-    
+
         Args:
             msg -- string to send
         """
         try:
             self._sock.sendall((msg + "\r\n").encode("utf-8"))
-        except Exception as e:
-            print(e)
+        except socket.error as ex:
+            print(ex)
             self.is_connected = False
             time.sleep(1)
             self.connect()
@@ -65,13 +64,13 @@ class SocketConnection():
         """
         return self._sock.recv(self._RX_BUF_SZ).decode("utf-8").strip()
 
-    def chat(self, channel, msg):
+    def chat(self, channel, message):
         """Send a chat message on a channel
-    
+
         Args:
             channel -- channel to send on
-            msg -- string to send
+            message -- string to send
         """
-        m = "PRIVMSG " + channel + " :" + msg
-        print("TX: " + m)
-        self.send(m)
+        msg = "PRIVMSG " + channel + " :" + message
+        print("TX: " + msg)
+        self.send(msg)

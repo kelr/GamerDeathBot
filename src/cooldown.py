@@ -1,4 +1,5 @@
 #!/usr/bin/python
+"""Cooldown Class"""
 
 import threading
 import time
