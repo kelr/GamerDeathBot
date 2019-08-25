@@ -14,11 +14,11 @@ def _check_conn(func):
     Returns:
         Wrapped function
     """
-    def wrap(obj, *args, **kwargs):
-        if obj.is_connected:
-            return func(obj, *args, **kwargs)
+    def wrap(*args, **kwargs):
+        if not args[0].is_connected:
+            raise Exception
         else:
-            print("not conn")
+            return func(*args, **kwargs)
     return wrap
 
 class SocketConnection():

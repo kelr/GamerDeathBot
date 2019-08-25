@@ -7,6 +7,7 @@ import random
 
 from cooldown import CommandCooldown
 from conn import SocketConnection
+from api.client import TwitchAPIClient
 import env
 
 # Timer threads
@@ -98,19 +99,28 @@ def get_random_greeting(username):
     """
     return random.sample(GREETS, 1)[0] + " " + username + " etalWave"
 
-def getup_thread(conn):
-    """Thread to tell the gamers to get up every 2 hours.
+def getup_thread(conn, api, channel):
+    """Thread to tell the gamers to get up every 2 hours. Check for live every 10s.
 
     Args:
         conn -- SocketConnection object
+        api -- API comm object
+        channel -- Channel to monitor
     """
+    success_count = 0
     while True:
-        time.sleep(7200)
-        for chan in env.TARGET_CHANNELS:
-            conn.chat(chan, "MrDestructoid " + chan[1:] + " alert! It's been 2 hours and you should get up and stretch to prevent Gamer Death!")
+        if api.channel_is_live(env.CHANNEL_ID[channel]):
+            # Send alert in 2 hours
+            if success_count >= 720:
+                conn.chat(channel, "MrDestructoid " + channel[1:] + " alert! It's been 2 hours and you should get up and stretch to prevent Gamer Death!")
+            success_count += 1
+        else:
+            success_count = 0
+        time.sleep(10)
 
 def main():
     """Setup the socket connection and the rx thread."""
+    api = TwitchAPIClient(env.CLIENT_ID, env.PASS)
     conn = SocketConnection()
     conn.connect()
 
@@ -118,9 +128,12 @@ def main():
     rx_t.daemon = True
     rx_t.start()
 
-    getup_t = threading.Thread(target=getup_thread, args=(conn,))
-    getup_t.daemon = True
-    getup_t.start()
+    getup_thread_list = []
+    for chan in env.TARGET_CHANNELS:
+        t = threading.Thread(target=getup_thread, args=(conn, api, chan))
+        t.daemon = True
+        t.start()
+        getup_thread_list.append(t)
 
     # Do nothing forever
     while True:
