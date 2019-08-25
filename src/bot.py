@@ -13,8 +13,8 @@ import consts
 
 # Timer threads
 CD_TIMERS = {
-    "greeting" : CommandCooldown(5),
-    "gamerdeath" : CommandCooldown(30)
+    "greeting" : CommandCooldown(10),
+    "gamerdeath" : CommandCooldown(60)
 }
 
 # Available greetings
@@ -89,8 +89,7 @@ def send_gamerdeath(conn, channel):
         channel -- channel to reply to
     """
     if CD_TIMERS["gamerdeath"].check_cooldown():
-        conn.chat(channel, "MrDestructoid Manual Gamer Death Prevention System activated! \
-            Please get up and prevent Gamer Death!")
+        conn.chat(channel, "MrDestructoid Please get up and stretch to prevent Gamer Death!")
         CD_TIMERS["gamerdeath"].set_cooldown()
 
 def get_random_greeting(username):
@@ -113,9 +112,8 @@ def getup_thread(conn, api, channel):
     while True:
         if api.channel_is_live(consts.CHANNEL_ID[channel]):
             # Send alert in 2 hours
-            if success_count >= 720:
-                conn.chat(channel, "MrDestructoid " + channel[1:] + " alert! \
-                    It's been 2 hours and you should get up and stretch to prevent Gamer Death!")
+            if success_count >= 1080:
+                conn.chat(channel, "MrDestructoid " + channel[1:] + " alert! It's been 3 hours and its time to prevent Gamer Death!")
             success_count += 1
         else:
             success_count = 0
