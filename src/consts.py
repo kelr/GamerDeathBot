@@ -13,7 +13,8 @@ PASS = ""
 # Channels to connect to
 TARGET_CHANNELS = (
     "#kyrotobi",
-    "#gamerdeathbot"
+    "#gamerdeathbot",
+    "#etalyx"
 )
 
 CHANNEL_ID = {
@@ -21,3 +22,7 @@ CHANNEL_ID = {
     "#gamerdeathbot" : 456787927,
     "#etalyx" : 28054687
 }
+
+REGEX_MESSAGE = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
+
+REGEX_GREETING = r"(hi|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up) @*GamerDeathBot"
