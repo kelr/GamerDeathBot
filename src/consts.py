@@ -26,3 +26,13 @@ CHANNEL_ID = {
 REGEX_MESSAGE = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
 REGEX_GREETING = r"(hi|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up) @*GamerDeathBot"
+
+GREETING_RESPONSES = (
+    "Hi",
+    "Hello",
+    "Hey",
+    "Yo",
+    "What's up",
+    "How's it going",
+    "Greetings"
+)

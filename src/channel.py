@@ -27,16 +27,6 @@ class ChannelTransmit():
             "gamerdeath" : CommandCooldown(60)
         }
 
-        self._greeting_responses = (
-            "Hi",
-            "Hello",
-            "Hey",
-            "Yo",
-            "What's up",
-            "How's it going",
-            "Greetings"
-        )
-
         self._tx_thread = threading.Thread(target=self._getup_thread())
         self._tx_thread.daemon = True
         self._tx_thread.start()
@@ -63,7 +53,7 @@ class ChannelTransmit():
         Args:
             username -- username to reply to
         """
-        return random.sample(self._greeting_responses, 1)[0] + " " + username + " etalWave"
+        return random.sample(consts.GREETING_RESPONSES, 1)[0] + " " + username + " etalWave"
 
     def _getup_thread(self):
         """Thread to tell the gamers to get up every so often. Check for live every 5min."""
