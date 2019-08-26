@@ -37,7 +37,7 @@ class SocketConnection():
 
             self.send("PASS " + consts.PASS)
             self.send("NICK " + consts.USER)
-            for chan in consts.TARGET_CHANNELS:
+            for chan in consts.TARGET_CHANNELS.keys():
                 self.send("JOIN " + chan)
 
     @_check_conn

@@ -59,7 +59,7 @@ class ChannelTransmit():
         """Thread to tell the gamers to get up every so often. Check for live every 5min."""
         success_count = 0
         while True:
-            if self.api.channel_is_live(consts.CHANNEL_ID[self.channel]):
+            if self.api.channel_is_live(consts.TARGET_CHANNELS[self.channel]):
                 # Send alert in 3 hours
                 if success_count > 36:
                     self.conn.chat(self.channel, "MrDestructoid " + self.channel[1:] + " alert! It's been 3 hours and its time to prevent Gamer Death!")

@@ -8,6 +8,10 @@ from api.client import TwitchAPIClient
 from channel import ChannelTransmit
 import consts
 
+REGEX_MESSAGE = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
+
+REGEX_GREETING = r"(hi|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up) @*GamerDeathBot"
+
 def parse_msg(conn, msg, active_channels):
     """Thread to read from the socket connection.
 
@@ -26,7 +30,7 @@ def parse_msg(conn, msg, active_channels):
     print("RX: " + str(channel) + " -- " + username + ": " + message.strip())
 
     # Match a greeting message
-    if re.match(consts.REGEX_GREETING, message, re.IGNORECASE):
+    if re.match(REGEX_GREETING, message, re.IGNORECASE):
         active_channels[channel].send_greeting(conn, channel, username)
 
     # Match a gamerdeath message
@@ -43,7 +47,7 @@ def split_msg_data(msg):
         username, message, channel 3-tuple. Strings, but channel can be None.
     """
     username = re.search(r"\w+", msg).group(0)
-    message = consts.REGEX_MESSAGE.sub("", msg)
+    message = REGEX_MESSAGE.sub("", msg)
     channel = re.search(r"#\w+", msg)
     if channel:
         channel = channel.group(0)
