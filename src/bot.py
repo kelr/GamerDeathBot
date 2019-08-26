@@ -29,7 +29,7 @@ GREETS = (
 )
 
 MSG_REGEX = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
-MSG_GREETING = r"^(hi|hello|hey|yo|sup|greetings|what's good|whats good) @*GamerDeathBot"
+MSG_GREETING = r"(hi|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up) @*GamerDeathBot"
 
 def rx_thread(conn):
     """Thread to read from the socket connection.
@@ -101,7 +101,7 @@ def get_random_greeting(username):
     return random.sample(GREETS, 1)[0] + " " + username + " etalWave"
 
 def getup_thread(conn, api, channel):
-    """Thread to tell the gamers to get up every so often. Check for live every 10s.
+    """Thread to tell the gamers to get up every so often. Check for live every 5min.
 
     Args:
         conn -- SocketConnection object
@@ -112,13 +112,14 @@ def getup_thread(conn, api, channel):
     while True:
         if api.channel_is_live(consts.CHANNEL_ID[channel]):
             # Send alert in 3 hours
-            if success_count >= 1080:
+            if success_count > 36:
                 conn.chat(channel, "MrDestructoid " + channel[1:] + " alert! It's been 3 hours and its time to prevent Gamer Death!")
                 success_count = 0
             success_count += 1
+            print(success_count)
         else:
             success_count = 0
-        time.sleep(10)
+        time.sleep(300)
 
 def main():
     """Setup the socket connection and the rx thread."""
@@ -129,6 +130,8 @@ def main():
     rx_t = threading.Thread(target=rx_thread, args=(conn,))
     rx_t.daemon = True
     rx_t.start()
+
+    #conn.chat("#etalyx", "MrDestructoid @Michael_Mooshy You can't delete me")
 
     getup_thread_list = []
     for chan in consts.TARGET_CHANNELS:
