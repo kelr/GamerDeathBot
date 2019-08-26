@@ -29,7 +29,7 @@ GREETS = (
 )
 
 MSG_REGEX = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
-MSG_GREETING = r"^(hi|hello|hey|yo|sup|greetings|) @*GamerDeathBot"
+MSG_GREETING = r"^(hi|hello|hey|yo|sup|greetings|what's good|whats good) @*GamerDeathBot"
 
 def rx_thread(conn):
     """Thread to read from the socket connection.
@@ -59,7 +59,7 @@ def parse_msg(conn, msg):
     if channel:
         channel = channel.group(0)
 
-    print("RX: " + str(channel) + ":" + username + ":" + message.strip())
+    print("RX: " + str(channel) + " -- " + username + ": " + message.strip())
 
     # Match a greeting message
     if re.match(MSG_GREETING, message, re.IGNORECASE):
@@ -89,7 +89,7 @@ def send_gamerdeath(conn, channel):
         channel -- channel to reply to
     """
     if CD_TIMERS["gamerdeath"].check_cooldown():
-        conn.chat(channel, "MrDestructoid Please get up and stretch to prevent Gamer Death!")
+        conn.chat(channel, "MrDestructoid Chat, remember to get up and stretch to prevent Gamer Death!")
         CD_TIMERS["gamerdeath"].set_cooldown()
 
 def get_random_greeting(username):
@@ -101,7 +101,7 @@ def get_random_greeting(username):
     return random.sample(GREETS, 1)[0] + " " + username + " etalWave"
 
 def getup_thread(conn, api, channel):
-    """Thread to tell the gamers to get up every 2 hours. Check for live every 10s.
+    """Thread to tell the gamers to get up every so often. Check for live every 10s.
 
     Args:
         conn -- SocketConnection object
@@ -111,9 +111,10 @@ def getup_thread(conn, api, channel):
     success_count = 0
     while True:
         if api.channel_is_live(consts.CHANNEL_ID[channel]):
-            # Send alert in 2 hours
+            # Send alert in 3 hours
             if success_count >= 1080:
                 conn.chat(channel, "MrDestructoid " + channel[1:] + " alert! It's been 3 hours and its time to prevent Gamer Death!")
+                success_count = 0
             success_count += 1
         else:
             success_count = 0
