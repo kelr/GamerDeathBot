@@ -20,6 +20,9 @@ def parse_msg(conn, msg, active_channels):
         msg -- message to parse
         active_channels -- active channel transmit dictionary
     """
+    if msg is None:
+        return
+
     # Handle ping pong, once ~5 mins
     if msg == "PING :tmi.twitch.tv":
         conn.send("PONG :tmi.twitch.tv")
@@ -67,9 +70,7 @@ def main():
 
     # Rx and process messages forever
     while True:
-        response = conn.recv()
-        if response is not None:
-            parse_msg(conn, response, active_channels)
+        parse_msg(conn, conn.recv(), active_channels)
 
 if __name__ == '__main__':
     main()
