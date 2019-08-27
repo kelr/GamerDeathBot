@@ -33,6 +33,19 @@ class TwitchAPIClient():
 
         return True if response['stream'] else False
 
+    def get_user_id(self, username):
+        """Get a user id from a username.
+
+        Args:
+            username -- username to check
+
+        Return:
+            ID string or None
+        """
+        response = self._request_get('users?login={}'.format(username))
+
+        return response['users'][0]["_id"]
+
     def _get_request_headers(self):
         """Prepare the headers for the requests."""
         headers = {
