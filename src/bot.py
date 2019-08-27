@@ -112,7 +112,7 @@ def getup_thread(conn, api, channel):
     while True:
         if api.channel_is_live(consts.CHANNEL_ID[channel]):
             # Send alert in 3 hours
-            if success_count > 36:
+            if success_count >= 36:
                 conn.chat(channel, "MrDestructoid " + channel[1:] + " alert! It's been 3 hours and its time to prevent Gamer Death!")
                 success_count = 0
             success_count += 1
