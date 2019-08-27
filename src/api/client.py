@@ -44,7 +44,13 @@ class TwitchAPIClient():
         """
         response = self._request_get('users?login={}'.format(username))
 
-        return response['users'][0]["_id"]
+        ident = None
+        try:
+            ident = response['users'][0]["_id"]
+        except IndexError:
+            print("Invalid username: " + username)
+
+        return ident
 
     def _get_request_headers(self):
         """Prepare the headers for the requests."""
