@@ -29,5 +29,8 @@ GREETING_RESPONSES = (
     "What's good",
     "Hey there",
     "Howdy",
-    "Good to see you"
+    "Good to see you",
+    "vvhat's up",
+    "Henlo",
+    "Hovvdy"
 )

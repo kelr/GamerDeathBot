@@ -2,6 +2,7 @@
 """Main Module"""
 
 import re
+from datetime import datetime
 
 from conn import SocketConnection
 from api.client import TwitchAPIClient
@@ -30,7 +31,7 @@ def parse_msg(conn, msg, active_channels):
 
     username, message, channel = split_msg_data(msg)
 
-    print("RX: " + str(channel) + " -- " + username + ": " + message.strip())
+    print(str(datetime.now()) + " " + str(channel) + " -- " + username + ": " + message.strip())
 
     # Match a greeting message
     if re.match(REGEX_GREETING, message, re.IGNORECASE):
