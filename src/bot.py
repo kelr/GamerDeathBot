@@ -37,11 +37,11 @@ def parse_msg(conn, msg, active_channels):
 
     # Match a greeting message
     if re.match(REGEX_GREETING, message, re.IGNORECASE):
-        active_channels[channel].send_greeting(conn, channel, username)
+        active_channels[channel].send_greeting(username)
 
     # Match a gamerdeath message
     elif message == "!gamerdeath":
-        active_channels[channel].send_gamerdeath(conn, channel)
+        active_channels[channel].send_gamerdeath()
 
 def split_msg_data(msg):
     """Split out user, message and channel names from a receieved message
