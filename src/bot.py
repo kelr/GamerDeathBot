@@ -5,6 +5,7 @@ import time
 import re
 import threading
 import random
+from datetime import datetime
 
 from cooldown import CommandCooldown
 from conn import SocketConnection
@@ -25,11 +26,15 @@ GREETS = (
     "Yo",
     "What's up",
     "How's it going",
-    "Greetings"
+    "Greetings",
+    "vvhat's up",
+    "Henlo",
+    "Howdy",
+    "Hovvdy"
 )
 
 MSG_REGEX = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
-MSG_GREETING = r"(hi|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up) @*GamerDeathBot"
+MSG_GREETING = r"(hi|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up|konichiwa|hewwo|etalWave|vvhats crackalackin|whats crackalackin|henlo|good morning|good evening|good afternoon) @*GamerDeathBot"
 
 def rx_thread(conn):
     """Thread to read from the socket connection.
@@ -59,7 +64,7 @@ def parse_msg(conn, msg):
     if channel:
         channel = channel.group(0)
 
-    print("RX: " + str(channel) + " -- " + username + ": " + message.strip())
+    print(str(datetime.now()) + " " + str(channel) + " -- " + username + ": " + message.strip())
 
     # Match a greeting message
     if re.match(MSG_GREETING, message, re.IGNORECASE):
@@ -130,8 +135,6 @@ def main():
     rx_t = threading.Thread(target=rx_thread, args=(conn,))
     rx_t.daemon = True
     rx_t.start()
-
-    #conn.chat("#etalyx", "MrDestructoid @Michael_Mooshy You can't delete me")
 
     getup_thread_list = []
     for chan in consts.TARGET_CHANNELS:
