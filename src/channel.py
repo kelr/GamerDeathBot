@@ -11,14 +11,17 @@ import consts
 class ChannelTransmit():
     """Handles transmissions and timers to connected channels."""
 
-    def __init__(self, conn, api, channel_name):
+    def __init__(self, conn, api, channel_name, channel_id):
         """Constructor.
 
         Args:
             conn -- SocketConnection object
-            channel -- channel to reply to
+            api -- API interface object
+            channel_name -- Name of the channel to transmit to
+            channdl_id -- Id of the channel to transmit to
         """
         self.channel = channel_name
+        self.channel_id = channel_id
         self.conn = conn
         self.api = api
 
@@ -59,10 +62,10 @@ class ChannelTransmit():
         """Thread to tell the gamers to get up every so often. Check for live every 5min."""
         success_count = 0
         while True:
-            if self.api.channel_is_live(consts.TARGET_CHANNELS[self.channel]):
+            if self.api.channel_is_live(self.channel_id):
                 # Send alert in 3 hours
                 if success_count >= 31:
-                    self.conn.chat(self.channel, "MrDestructoid " + self.channel[1:] + " alert! It's been 3 hours and its time to prevent Gamer Death!")
+                    self.conn.chat(self.channel, "MrDestructoid " + self.channel + " alert! It's been 3 hours and its time to prevent Gamer Death!")
                     success_count = 0
                 success_count += 1
                 print(success_count)

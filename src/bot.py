@@ -56,10 +56,11 @@ def split_msg_data(msg):
     message = REGEX_MESSAGE.sub("", msg)
     channel = re.search(r"#\w+", msg)
     if channel:
-        channel = channel.group(0)
+        channel = channel.group(0)[1:]
     return username, message, channel
 
 def handle_sigint(sig, frame):
+    """SIGINT signal handler"""
     sys.exit(0)
 
 def main():
@@ -70,7 +71,8 @@ def main():
 
     active_channels = {}
     for chan in consts.TARGET_CHANNELS:
-        active_channels[chan] = ChannelTransmit(conn, api, chan)
+        chan_id = api.get_user_id(chan)
+        active_channels[chan] = ChannelTransmit(conn, api, chan, chan_id)
 
     conn.connect()
 

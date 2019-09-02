@@ -38,8 +38,9 @@ class SocketConnection():
 
             self.send("PASS " + consts.PASS)
             self.send("NICK " + consts.USER)
-            for chan in consts.TARGET_CHANNELS.keys():
-                self.send("JOIN " + chan)
+            for chan in consts.TARGET_CHANNELS:
+                print("Joining: " + chan)
+                self.send("JOIN #" + chan)
 
     @_check_conn
     def send(self, msg):
@@ -77,6 +78,6 @@ class SocketConnection():
             channel -- channel to send on
             message -- string to send
         """
-        msg = "PRIVMSG " + channel + " :" + message
+        msg = "PRIVMSG #" + channel + " :" + message
         print("TX: " + msg)
         self.send(msg)

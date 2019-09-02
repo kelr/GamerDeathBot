@@ -11,11 +11,11 @@ CLIENT_ID = "qx5lh8m0pmmro5uh84z6n19il268a0"
 PASS = ""
 
 # Channels to connect to
-TARGET_CHANNELS = {
-    "#kyrotobi" : 31903323,
-    "#gamerdeathbot" : 456787927,
-    "#etalyx" : 28054687
-}
+TARGET_CHANNELS = (
+    "kyrotobi",
+    "gamerdeathbot",
+    "etalyx"
+)
 
 GREETING_RESPONSES = (
     "Hi",
