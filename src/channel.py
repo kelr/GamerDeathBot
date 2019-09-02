@@ -27,7 +27,7 @@ class ChannelTransmit():
             "gamerdeath" : CommandCooldown(60)
         }
 
-        self._tx_thread = threading.Thread(target=self._getup_thread())
+        self._tx_thread = threading.Thread(target=self._getup_thread)
         self._tx_thread.daemon = True
         self._tx_thread.start()
 

@@ -32,6 +32,7 @@ class SocketConnection():
         """Initializes connection to the Twitch servers."""
         if not self.is_connected:
             self._sock = socket.socket()
+            self._sock.settimeout(0.5)
             self._sock.connect((consts.HOST, consts.PORT))
             self.is_connected = True
 
@@ -57,12 +58,17 @@ class SocketConnection():
 
     @_check_conn
     def recv(self):
-        """Read data from the socket.
+        """Read data from the socket. Timeout every 0.5 seconds.
 
         Returns:
-            stripped decoded string
+            stripped decoded string or None if no data was recved
         """
-        return self._sock.recv(self._RX_BUF_SZ).decode("utf-8").strip()
+        data = None
+        try:
+            data = self._sock.recv(self._RX_BUF_SZ).decode("utf-8").strip()
+        except socket.timeout:
+            pass
+        return data
 
     def chat(self, channel, message):
         """Send a chat message on a channel

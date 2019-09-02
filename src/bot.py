@@ -2,6 +2,8 @@
 """Main Module"""
 
 import re
+import signal
+import sys
 from datetime import datetime
 
 from conn import SocketConnection
@@ -11,7 +13,7 @@ import consts
 
 REGEX_MESSAGE = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
-REGEX_GREETING = r"(hi|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up) @*GamerDeathBot"
+REGEX_GREETING = r"(hi|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up|konichiwa|hewwo|etalWave|vvhats crackalackin|whats crackalackin|henlo|good morning|good evening|good afternoon) @*GamerDeathBot"
 
 def parse_msg(conn, msg, active_channels):
     """Thread to read from the socket connection.
@@ -57,13 +59,16 @@ def split_msg_data(msg):
         channel = channel.group(0)
     return username, message, channel
 
+def handle_sigint(sig, frame):
+    sys.exit(0)
+
 def main():
+    signal.signal(signal.SIGINT, handle_sigint)
     """Setup the socket connection and the rx thread."""
     api = TwitchAPIClient(consts.CLIENT_ID, consts.PASS)
     conn = SocketConnection()
 
     active_channels = {}
-
     for chan in consts.TARGET_CHANNELS:
         active_channels[chan] = ChannelTransmit(conn, api, chan)
 
