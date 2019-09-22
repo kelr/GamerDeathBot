@@ -31,18 +31,21 @@ def parse_msg(conn, msg, active_channels):
         conn.send("PONG :tmi.twitch.tv")
         return
 
-    username, message, channel = split_msg_data(msg)
+    # Check for more than one message per recv call
+    message_chunks = msg.split("\r\n")
+    for split_msg in message_chunks:
+        username, message, channel = split_msg_data(split_msg)
 
-    print(str(datetime.now()) + " " + str(channel) + " -- " + username + ": " + message.strip())
+        print(str(datetime.now()) + " : " + str(channel) + " -- " + username + ": " + message.strip())
 
-    # Match a greeting message
-    if re.match(REGEX_GREETING, message, re.IGNORECASE):
-        active_channels[channel].send_greeting(username)
+        # Match a greeting message
+        if re.match(REGEX_GREETING, message, re.IGNORECASE):
+            active_channels[channel].send_greeting(username)
 
-    # Match a gamerdeath message
-    elif message == "!gamerdeath":
-        active_channels[channel].send_gamerdeath()
-
+        # Match a gamerdeath message
+        elif message == "!gamerdeath":
+            active_channels[channel].send_gamerdeath()
+    
 def split_msg_data(msg):
     """Split out user, message and channel names from a receieved message
 
