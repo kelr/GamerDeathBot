@@ -3,6 +3,7 @@
 
 import requests
 from requests.compat import urljoin
+import datetime
 
 class TwitchAPIClient():
     """Twitch API client."""
@@ -32,6 +33,21 @@ class TwitchAPIClient():
         response = self._request_get('streams/{}'.format(channel_id), params=params)
 
         return True if response['stream'] else False
+
+    def channel_uptime(self, channel_id):
+        """Get a channel's uptime in seconds
+
+        :param channel_id: integer ID to check
+        :return:  integer
+        """
+        try:
+            started = self._request_get_new("streams?user_id=%s" % channel_id).json()["data"][0]["started_at"]
+        except IndexError:  # channel is offline or channel doesnt exist
+            uptime = -1
+        else:
+            starttime = datetime.datetime.strptime(started, '%Y-%m-%dT%H:%M:%SZ')
+            uptime = (datetime.datetime.utcnow() - starttime).seconds
+        return uptime
 
     def get_user_id(self, username):
         """Get a user id from a username.
@@ -72,6 +88,29 @@ class TwitchAPIClient():
         """
         url = urljoin('https://api.twitch.tv/kraken/', path)
         headers = self._get_request_headers()
+
+        response = requests.get(url, params=params, headers=headers)
+
+        if response.status_code >= 500:
+            print("Got status " + str(response.status_code))
+
+        response.raise_for_status()
+
+        return response.json()
+
+    def _request_get_new(self, path, params=None):
+        """Perform a HTTP GET request.
+
+        Args:
+            path -- Path to append on default api path.
+            params -- Extra parameters to append on
+        Return:
+            JSON object response
+        """
+        url = urljoin('https://api.twitch.tv/helix/', path)
+        headers = {
+            'Authorization': "Bearer " + self._oauth_token
+        }
 
         response = requests.get(url, params=params, headers=headers)
 
