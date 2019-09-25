@@ -12,12 +12,25 @@ PASS = ""
 
 # Channels to connect to
 TARGET_CHANNELS = (
-    "#kyrotobi",
-    "#gamerdeathbot"
+    "kyrotobi",
+    "gamerdeathbot",
+    "etalyx"
 )
 
-CHANNEL_ID = {
-    "#kyrotobi" : 31903323,
-    "#gamerdeathbot" : 456787927,
-    "#etalyx" : 28054687
-}
+GREETING_RESPONSES = (
+    "Hi",
+    "Hello",
+    "Hey",
+    "Yo",
+    "What's up",
+    "How's it going",
+    "Greetings",
+    "Sup",
+    "What's good",
+    "Hey there",
+    "Howdy",
+    "Good to see you",
+    "vvhat's up",
+    "Henlo",
+    "Hovvdy"
+)

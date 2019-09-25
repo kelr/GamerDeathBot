@@ -32,13 +32,15 @@ class SocketConnection():
         """Initializes connection to the Twitch servers."""
         if not self.is_connected:
             self._sock = socket.socket()
+            self._sock.settimeout(0.5)
             self._sock.connect((consts.HOST, consts.PORT))
             self.is_connected = True
 
             self.send("PASS " + consts.PASS)
             self.send("NICK " + consts.USER)
             for chan in consts.TARGET_CHANNELS:
-                self.send("JOIN " + chan)
+                print("Joining: " + chan)
+                self.send("JOIN #" + chan)
 
     @_check_conn
     def send(self, msg):
@@ -57,12 +59,17 @@ class SocketConnection():
 
     @_check_conn
     def recv(self):
-        """Read data from the socket.
+        """Read data from the socket. Timeout every 0.5 seconds.
 
         Returns:
-            stripped decoded string
+            stripped decoded string or None if no data was recved
         """
-        return self._sock.recv(self._RX_BUF_SZ).decode("utf-8").strip()
+        data = None
+        try:
+            data = self._sock.recv(self._RX_BUF_SZ).decode("utf-8").strip()
+        except socket.timeout:
+            pass
+        return data
 
     def chat(self, channel, message):
         """Send a chat message on a channel
@@ -71,6 +78,6 @@ class SocketConnection():
             channel -- channel to send on
             message -- string to send
         """
-        msg = "PRIVMSG " + channel + " :" + message
+        msg = "PRIVMSG #" + channel + " :" + message
         print("TX: " + msg)
         self.send(msg)
