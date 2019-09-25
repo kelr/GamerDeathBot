@@ -66,7 +66,7 @@ class SocketConnection():
         """
         data = None
         try:
-            data = self._sock.recv(self._RX_BUF_SZ).decode("utf-8").strip()
+            data = self._sock.recv(self._RX_BUF_SZ).decode("utf-8", "ignore").strip()
         except socket.timeout:
             pass
         return data
