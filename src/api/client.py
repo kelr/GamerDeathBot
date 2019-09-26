@@ -41,7 +41,7 @@ class TwitchAPIClient():
         :return:  integer
         """
         try:
-            started = self._request_get_new("streams?user_id=%s" % channel_id).json()["data"][0]["started_at"]
+            started = self._request_get_new("streams?user_id=%s" % channel_id)["data"][0]["started_at"]
         except IndexError:  # channel is offline or channel doesnt exist
             uptime = -1
         else:
@@ -109,6 +109,7 @@ class TwitchAPIClient():
         """
         url = urljoin('https://api.twitch.tv/helix/', path)
         headers = {
+            'Client-ID': self._client_id,
             'Authorization': "Bearer " + self._oauth_token
         }
 

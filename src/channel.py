@@ -66,7 +66,7 @@ class ChannelTransmit():
         success_count = 0
         reminder_period = 10800  # time in seconds to remind. default: 10800s = 3hrs
         while True:
-            uptime = self.api.channel_is_live(self.channel_id)
+            uptime = self.api.channel_uptime(self.channel_id)
             if uptime != -1:
                 # Send alert in 3 hours
                 if int(uptime / reminder_period) > success_count:
