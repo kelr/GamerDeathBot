@@ -24,7 +24,7 @@ class SocketConnection():
     """Manages the socket connection"""
     def __init__(self):
         """Constructor."""
-        self._RX_BUF_SZ = 1024
+        self._RX_BUF_SZ = 2048
         self._sock = None
         self.is_connected = False
 
@@ -66,7 +66,7 @@ class SocketConnection():
         """
         data = None
         try:
-            data = self._sock.recv(self._RX_BUF_SZ).decode("utf-8").strip()
+            data = self._sock.recv(self._RX_BUF_SZ).decode("utf-8", "ignore").strip()
         except socket.timeout:
             pass
         return data
