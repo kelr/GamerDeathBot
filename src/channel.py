@@ -56,19 +56,27 @@ class ChannelTransmit():
         Args:
             username -- username to reply to
         """
-        return random.sample(consts.GREETING_RESPONSES, 1)[0] + " " + username + " etalWave"
+        response = random.sample(consts.GREETING_RESPONSES, 1)[0] + " " + username + " etalWave"
+        if username.lower() == "evanito":
+            response = response + " You are my favorite chatter :)"
+        return response
 
     def _getup_thread(self):
-        """Thread to tell the gamers to get up every so often. Check for live every 5min."""
+        """Thread to tell the gamers to get up every so often. Check for live every reminder_period."""
         success_count = 0
+        reminder_period = 10800  # time in seconds to remind. default: 10800s = 3hrs
         while True:
-            if self.api.channel_is_live(self.channel_id):
+            uptime = self.api.channel_uptime(self.channel_id)
+            if uptime != -1:
                 # Send alert in 3 hours
-                if success_count >= 36:
-                    self.conn.chat(self.channel, "MrDestructoid " + self.channel + " alert! It's been 3 hours and its time to prevent Gamer Death!")
-                    success_count = 0
-                success_count += 1
+                if int(uptime / reminder_period) > success_count:
+                    self.conn.chat(self.channel, "MrDestructoid " + self.channel + " alert! It's been %s hours and its time to prevent Gamer Death!" % str(int(reminder_period / 3600)))
+                    success_count = int(uptime / reminder_period)
                 print(success_count)
+                wait_time = reminder_period - (uptime % reminder_period)
             else:
                 success_count = 0
-            time.sleep(300)
+                wait_time = 300
+            if wait_time < 5:
+                wait_time = 5
+            time.sleep(wait_time)  # sleep until the expected time, then check again
