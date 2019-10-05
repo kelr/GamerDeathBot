@@ -59,7 +59,7 @@ def split_msg_data(msg):
     message = REGEX_MESSAGE.sub("", msg)
     channel = re.search(r"#\w+", msg)
 
-    if not username:
+    if username:
         username = username.group(0)
 
     if channel:
