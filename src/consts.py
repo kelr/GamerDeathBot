@@ -17,6 +17,11 @@ TARGET_CHANNELS = (
     "etalyx"
 )
 
+SUB_GIFTERS = (
+    "technotoast",
+    "kelleymcches"
+)
+
 GREETING_RESPONSES = (
     "Hi",
     "Hello",
@@ -33,4 +38,30 @@ GREETING_RESPONSES = (
     "vvhat's up",
     "Henlo",
     "Hovvdy"
+)
+
+FAREWELL_RESPONSES = (
+    "Bye,"
+    "Goodnight",
+    "Good night",
+    "Goodbye",
+    "Good bye",
+    "See you",
+    "See ya",
+    "So long",
+    "Farewell",
+    "Later",
+    "Seeya",
+    "Ciao",
+    "Au revoir",
+    "Bon voyage",
+    "Peace",
+    "In a while crocodile",
+    "See you later alligator",
+    "Later alligator",
+    "Have a good one",
+    "l8r",
+    "Later skater",
+    "Catch you on the flip side",
+    "Sayonara"
 )

@@ -15,6 +15,8 @@ REGEX_MESSAGE = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
 REGEX_GREETING = r"(hi|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up|konichiwa|hewwo|etalWave|vvhats crackalackin|whats crackalackin|henlo|good morning|good evening|good afternoon) @*GamerDeathBot"
 
+REGEX_FAREWELL = r"(bye|goodnight|good night|goodbye|good bye|see you|see ya|so long|farewell|later|seeya|ciao|au revoir|bon voyage|peace|in a while crocodile|see you later alligator|later alligator|have a good one|igottago|l8r|later skater|catch you on the flip side|bye-bye|sayonara) @*GamerDeathBot"
+
 def parse_msg(conn, msg, active_channels):
     """Thread to read from the socket connection.
 
@@ -41,6 +43,10 @@ def parse_msg(conn, msg, active_channels):
         # Match a greeting message
         if re.match(REGEX_GREETING, message, re.IGNORECASE):
             active_channels[channel].send_greeting(username)
+
+        # Match a farewell message
+        elif re.match(REGEX_FAREWELL, message, re.IGNORECASE):
+            active_channels[channel].send_farewell(username)
 
         # Match a gamerdeath message
         elif message == "!gamerdeath":
