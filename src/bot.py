@@ -36,7 +36,7 @@ def parse_msg(conn, msg, active_channels):
     for split_msg in message_chunks:
         username, message, channel = split_msg_data(split_msg)
 
-        print(str(datetime.now()) + " : " + str(channel) + " -- " + username + ": " + message.strip())
+        print(str(datetime.now()) + " : " + str(channel) + " -- " + str(username) + ": " + message.strip())
 
         # Match a greeting message
         if re.match(REGEX_GREETING, message, re.IGNORECASE):
@@ -55,11 +55,16 @@ def split_msg_data(msg):
     Return:
         username, message, channel 3-tuple. Strings, but channel can be None.
     """
-    username = re.search(r"\w+", msg).group(0)
+    username = re.search(r"\w+", msg)
     message = REGEX_MESSAGE.sub("", msg)
     channel = re.search(r"#\w+", msg)
+
+    if username:
+        username = username.group(0)
+
     if channel:
         channel = channel.group(0)[1:]
+
     return username, message, channel
 
 def handle_sigint(sig, frame):
