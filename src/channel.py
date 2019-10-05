@@ -45,7 +45,7 @@ class ChannelTransmit():
             self.conn.chat(self.channel, self._get_random_greeting(username))
             self._timers["greeting"].set_cooldown()
 
-    def send_greeting(self, username):
+    def send_farewell(self, username):
         """Send a farewell message when someone says bye to GDB.
 
         Args:
