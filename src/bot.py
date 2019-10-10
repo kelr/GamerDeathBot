@@ -41,11 +41,11 @@ def parse_msg(conn, msg, active_channels):
         print(str(datetime.now()) + " : " + str(channel) + " -- " + str(username) + ": " + message.strip())
 
         # Match a greeting message
-        if re.match(REGEX_GREETING, message, re.IGNORECASE):
+        if re.search(REGEX_GREETING, message, re.IGNORECASE):
             active_channels[channel].send_greeting(username)
 
         # Match a farewell message
-        elif re.match(REGEX_FAREWELL, message, re.IGNORECASE):
+        elif re.search(REGEX_FAREWELL, message, re.IGNORECASE):
             active_channels[channel].send_farewell(username)
 
         # Match a gamerdeath message

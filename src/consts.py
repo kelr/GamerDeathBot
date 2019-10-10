@@ -63,5 +63,6 @@ FAREWELL_RESPONSES = (
     "l8r",
     "Later skater",
     "Catch you on the flip side",
-    "Sayonara"
+    "Sayonara",
+    "Auf weidersehen"
 )
