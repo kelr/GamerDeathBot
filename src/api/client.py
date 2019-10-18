@@ -5,6 +5,8 @@ import requests
 from requests.compat import urljoin
 import datetime
 
+Log = logging.getLogger("gdb_log")
+
 class TwitchAPIClient():
     """Twitch API client."""
 
@@ -64,7 +66,7 @@ class TwitchAPIClient():
         try:
             ident = response['users'][0]["_id"]
         except IndexError:
-            print("Invalid username: " + username)
+            Log.error("Invalid username: " + username)
 
         return ident
 
@@ -92,7 +94,7 @@ class TwitchAPIClient():
         response = requests.get(url, params=params, headers=headers)
 
         if response.status_code >= 500:
-            print("Got status " + str(response.status_code))
+            Log.error("Got status " + str(response.status_code))
 
         response.raise_for_status()
 
@@ -116,7 +118,7 @@ class TwitchAPIClient():
         response = requests.get(url, params=params, headers=headers)
 
         if response.status_code >= 500:
-            print("Got status " + str(response.status_code))
+            Log.error("Got status " + str(response.status_code))
 
         response.raise_for_status()
 

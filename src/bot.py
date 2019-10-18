@@ -4,12 +4,15 @@
 import re
 import signal
 import sys
+import logger
 from datetime import datetime
 
 from conn import SocketConnection
 from api.client import TwitchAPIClient
 from channel import ChannelTransmit
 import consts
+
+Log = logging.getLogger("gdb_log")
 
 REGEX_MESSAGE = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
@@ -38,7 +41,7 @@ def parse_msg(conn, msg, active_channels):
     for split_msg in message_chunks:
         username, message, channel = split_msg_data(split_msg)
 
-        print(str(datetime.now()) + " : " + str(channel) + " -- " + str(username) + ": " + message.strip())
+        Log.info(str(datetime.now()) + " : " + str(channel) + " -- " + str(username) + ": " + message.strip())
 
         # Match a greeting message
         if re.search(REGEX_GREETING, message, re.IGNORECASE):
@@ -77,8 +80,22 @@ def handle_sigint(sig, frame):
     """SIGINT signal handler"""
     sys.exit(0)
 
+def setup_logger():
+    global Log
+    formatter = logging.Formatter('%(asctime)s : %(message)s')
+    fileHandler = logging.FileHandler("/var/log/gdb", mode='w')
+    fileHandler.setFormatter(formatter)
+    streamHandler = logging.StreamHandler()
+    streamHandler.setFormatter(formatter)
+
+    Log.addHandler(fileHandler)
+    Log.addHandler(streamHandler)
+
 def main():
     signal.signal(signal.SIGINT, handle_sigint)
+
+    setup_logger()
+
     """Setup the socket connection and the rx thread."""
     api = TwitchAPIClient(consts.CLIENT_ID, consts.PASS)
     conn = SocketConnection()

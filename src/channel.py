@@ -4,9 +4,12 @@
 import time
 import threading
 import random
+import logging
 
 from cooldown import CommandCooldown
 import consts
+
+Log = logging.getLogger("gdb_log")
 
 class ChannelTransmit():
     """Handles transmissions and timers to connected channels."""
@@ -88,12 +91,13 @@ class ChannelTransmit():
         reminder_period = 10800  # time in seconds to remind. default: 10800s = 3hrs
         while True:
             uptime = self.api.channel_uptime(self.channel_id)
+            Log.info("Uptime: " + str(uptime))
             if uptime != -1:
                 # Send alert in 3 hours
                 if int(uptime / reminder_period) > success_count:
                     self.conn.chat(self.channel, "MrDestructoid " + self.channel + " alert! It's been %s hours and its time to prevent Gamer Death!" % str(int(reminder_period / 3600)))
                     success_count = int(uptime / reminder_period)
-                print(success_count)
+                Log.info(success_count)
                 wait_time = reminder_period - (uptime % reminder_period)
             else:
                 success_count = 0
