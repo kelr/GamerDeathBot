@@ -4,7 +4,7 @@
 import re
 import signal
 import sys
-import logger
+import logging
 from datetime import datetime
 
 from conn import SocketConnection

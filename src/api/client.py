@@ -4,6 +4,7 @@
 import requests
 from requests.compat import urljoin
 import datetime
+import logging
 
 Log = logging.getLogger("gdb_log")
 
