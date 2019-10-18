@@ -3,8 +3,11 @@
 
 import socket
 import time
+import logging
 
 import consts
+
+Log = logging.getLogger("gdb_log")
 
 def _check_conn(func):
     """Decorator to check that a connection is established before doing anything
@@ -39,7 +42,7 @@ class SocketConnection():
             self.send("PASS " + consts.PASS)
             self.send("NICK " + consts.USER)
             for chan in consts.TARGET_CHANNELS:
-                print("Joining: " + chan)
+                Log.info("Joining: " + chan)
                 self.send("JOIN #" + chan)
 
     @_check_conn
@@ -52,7 +55,7 @@ class SocketConnection():
         try:
             self._sock.sendall((msg + "\r\n").encode("utf-8"))
         except socket.error as ex:
-            print(ex)
+            Log.error(ex)
             self.is_connected = False
             time.sleep(1)
             self.connect()
@@ -79,5 +82,5 @@ class SocketConnection():
             message -- string to send
         """
         msg = "PRIVMSG #" + channel + " :" + message
-        print("TX: " + msg)
+        Log.info("TX: " + msg)
         self.send(msg)
