@@ -14,7 +14,8 @@ PASS = ""
 TARGET_CHANNELS = (
     "kyrotobi",
     "gamerdeathbot",
-    "etalyx"
+    "etalyx",
+    "dorkcube7000"
 )
 
 SUB_GIFTERS = (
@@ -25,6 +26,7 @@ SUB_GIFTERS = (
 GREETING_RESPONSES = (
     "Hi",
     "Hello",
+    "Hiya",
     "Hey",
     "Yo",
     "What's up",
