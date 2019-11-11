@@ -16,9 +16,9 @@ Log = logging.getLogger("gdb_log")
 
 REGEX_MESSAGE = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
-REGEX_GREETING = r"(hi|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up|konichiwa|hewwo|etalWave|vvhats crackalackin|whats crackalackin|henlo|good morning|good evening|good afternoon) @*GamerDeathBot"
+REGEX_GREETING = r"(hi|hiya|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up|konichiwa|hewwo|etalWave|vvhats crackalackin|whats crackalackin|henlo|good morning|good evening|good afternoon) (@*GamerDeathBot|gdb)"
 
-REGEX_FAREWELL = r"(bye|goodnight|good night|goodbye|good bye|see you|see ya|so long|farewell|later|seeya|ciao|au revoir|bon voyage|peace|in a while crocodile|see you later alligator|later alligator|have a good one|igottago|l8r|later skater|catch you on the flip side|bye-bye|sayonara) @*GamerDeathBot"
+REGEX_FAREWELL = r"(bye|goodnight|good night|goodbye|good bye|see you|see ya|so long|farewell|later|seeya|ciao|au revoir|bon voyage|peace|in a while crocodile|see you later alligator|later alligator|have a good one|igottago|l8r|later skater|catch you on the flip side|bye-bye|sayonara) (@*GamerDeathBot|gdb)"
 
 def parse_msg(conn, msg, active_channels):
     """Thread to read from the socket connection.
@@ -60,7 +60,6 @@ def split_msg_data(msg):
 
     Args:
         msg -- message to parse
-
     Return:
         username, message, channel 3-tuple. Strings, but channel can be None.
     """
@@ -81,6 +80,7 @@ def handle_sigint(sig, frame):
     sys.exit(0)
 
 def setup_logger():
+    """Initialize logger to write to /var/log/gdb"""
     global Log
     Log.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s : %(message)s')
@@ -94,10 +94,9 @@ def setup_logger():
 
 def main():
     signal.signal(signal.SIGINT, handle_sigint)
-
     setup_logger()
 
-    """Setup the socket connection and the rx thread."""
+    # Setup the socket connection and the rx thread.
     api = TwitchAPIClient(consts.CLIENT_ID, consts.PASS)
     conn = SocketConnection()
 
