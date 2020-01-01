@@ -84,7 +84,7 @@ def setup_logger():
     global Log
     Log.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s : %(message)s')
-    fileHandler = logging.FileHandler("/var/log/gdb", mode='w')
+    fileHandler = logging.FileHandler("/var/log/gdb", mode='a')
     fileHandler.setFormatter(formatter)
     streamHandler = logging.StreamHandler()
     streamHandler.setFormatter(formatter)
