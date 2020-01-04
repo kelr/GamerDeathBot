@@ -45,6 +45,10 @@ class SocketConnection():
                 Log.info("Joining: " + chan)
                 self.send("JOIN #" + chan)
 
+    def disconnect(self):
+        self._sock.close()
+        self.is_connected = False
+
     @_check_conn
     def send(self, msg):
         """Send a message on the socket. Will attempt reconnection if socket conn is lost.

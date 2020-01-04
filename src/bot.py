@@ -28,7 +28,9 @@ def parse_msg(conn, msg, active_channels):
         msg -- message to parse
         active_channels -- active channel transmit dictionary
     """
-    if msg is None:
+    if (msg is None) or (msg == ""):
+        conn.disconnect()
+        conn.connect()
         return
 
     # Handle ping pong, once ~5 mins
@@ -40,6 +42,11 @@ def parse_msg(conn, msg, active_channels):
     message_chunks = msg.split("\r\n")
     for split_msg in message_chunks:
         username, message, channel = split_msg_data(split_msg)
+
+        if (channel or username) is None:
+            conn.disconnect()
+            conn.connect()
+            return
 
         Log.info(str(channel) + " -- " + str(username) + ": " + message.strip())
 
