@@ -8,6 +8,8 @@ const (
 	greetingCooldown   = 10
 	farewellCooldown   = 10
 	gamerdeathCooldown = 60
+	registerCooldown   = 1
+	reminderPeriod     = 10800
 )
 
 type ChatChannel struct {
@@ -17,6 +19,7 @@ type ChatChannel struct {
 	isGreetingReady   bool
 	isFarewellReady   bool
 	isGamerdeathReady bool
+	isRegisterReady   bool
 }
 
 // Returns a new IRC Client
@@ -28,6 +31,7 @@ func NewChatChannel(username string, channelId string, connection *IrcConnection
 		isGreetingReady:   true,
 		isFarewellReady:   true,
 		isGamerdeathReady: true,
+		isRegisterReady:   true,
 	}
 }
 
@@ -50,6 +54,37 @@ func (c *ChatChannel) SendGamerdeath() {
 	if c.isGamerdeathReady {
 		c.conn.Chat(c.channelName, "MrDestructoid Chat, remember to get up and stretch to prevent Gamer Death!")
 		go c.setGamerdeathTimer()
+	}
+}
+
+func (c *ChatChannel) SendRegistered(targetUser string) {
+	if c.isRegisterReady {
+		c.conn.Chat(c.channelName, "I joined your chat, "+targetUser+"!")
+		go c.setRegisterCooldown()
+	}
+}
+
+func (c *ChatChannel) SendUnregistered(targetUser string) {
+	if c.isRegisterReady {
+		c.conn.Chat(c.channelName, "I left your chat, "+targetUser+"!")
+		go c.setRegisterCooldown()
+	}
+}
+
+func (c *ChatChannel) StartGetupTimer() {
+	for {
+		uptime := getChannelUptime(c.channelName)
+
+		if uptime != -1 {
+			// Timer ticks at the next 3 hour mark determined by uptime
+			timer := time.NewTimer(time.Duration(reminderPeriod-(uptime%reminderPeriod)) * time.Second)
+			<-timer.C
+			if c.conn.isConnected {
+				c.conn.Chat(c.channelName, "MrDestructoid "+c.channelName+" alert! It's been 3 hours and its time to prevent Gamer Death!")
+			}
+		} else {
+			time.Sleep(5 * time.Second)
+		}
 	}
 }
 
@@ -82,4 +117,11 @@ func (c *ChatChannel) setGamerdeathTimer() {
 	timer := time.NewTimer(gamerdeathCooldown * time.Second)
 	<-timer.C
 	c.isGamerdeathReady = true
+}
+
+func (c *ChatChannel) setRegisterCooldown() {
+	c.isRegisterReady = false
+	timer := time.NewTimer(registerCooldown * time.Second)
+	<-timer.C
+	c.isRegisterReady = true
 }

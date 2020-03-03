@@ -12,7 +12,7 @@ const (
 	botNick       = ""
 	botPass       = ""
 	clientID      = ""
-    dbInfo        = ""
+	dbInfo        = ""
 	regexUsername = `\w+`
 	regexChannel  = `#\w+`
 	regexMessage  = `^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :`
@@ -31,14 +31,27 @@ func splitMessage(msg string) (string, string, string) {
 	return reChannel.FindString(msg), reUser.FindString(msg), reMessage.ReplaceAllLiteralString(msg, "")
 }
 
-func parseMessage(db *sql.DB, channelMap *map[string]*ChatChannel, channel string, username string, message string) {
-	if message == "!join" && channel == "#gamertestbot" {
+func parseMessage(db *sql.DB, irc *IrcConnection, channelMap *map[string]*ChatChannel, channel string, username string, message string) {
+	if message == "!join" && channel == "#"+botNick {
 		fmt.Println("REGISTERED " + username)
-		// TODO: api query for id
-		registerNewChannel(db, username, "31903323")
-	} else if message == "!leave" && channel == "#gamertestbot" {
+		currChannel := (*channelMap)[botNick]
+
+		// TODO: query ID
+		registerNewChannel(db, username, getChannelID(username))
+		irc.Join(username)
+		(*channelMap)[username] = NewChatChannel(username, getChannelID(username), irc)
+
+		currChannel.SendRegistered(username)
+	} else if message == "!leave" && channel == "#"+botNick {
 		fmt.Println("UNREGISTERED " + username)
+		currChannel := (*channelMap)[botNick]
+
 		removeChannel(db, username)
+		irc.Part(username)
+		delete((*channelMap), username)
+
+		currChannel.SendUnregistered(username)
+
 	} else if reGreeting.FindString(message) != "" {
 		currChannel := (*channelMap)[channel[1:]]
 		currChannel.SendGreeting(username)
@@ -52,23 +65,23 @@ func parseMessage(db *sql.DB, channelMap *map[string]*ChatChannel, channel strin
 }
 
 func main() {
-	//api := twitchapi.NewTwitchClient(clientID)
 	db, err := sql.Open("postgres", dbInfo)
 	if err != nil {
 		fmt.Println(err)
 	}
 	defer db.Close()
 
-	connList := getRegisteredChannels(db)
+	connList, idList := getRegisteredChannels(db)
 
 	irc := NewIRCConnection(connList)
 	irc.Connect(botNick, botPass)
 	defer irc.Disconnect()
 
 	channelMap := make(map[string]*ChatChannel)
-	for _, channel := range connList {
+	for index, channel := range connList {
 		// TODO channel id
-		channelMap[channel] = NewChatChannel(channel, "123", irc)
+		channelMap[channel] = NewChatChannel(channel, idList[index], irc)
+		//channelMap[channel].StartGetupTimer()
 		fmt.Println("Registered: " + channel)
 	}
 
@@ -78,7 +91,7 @@ func main() {
 		if username != "tmi" && username != botNick {
 			//fmt.Println(time.Now().Format(time.StampMilli), ":", channel, "-", username, "-", message)
 			go insertDB(db, time.Now(), channel, username, message)
-			parseMessage(db, &channelMap, channel, username, message)
+			parseMessage(db, irc, &channelMap, channel, username, message)
 		}
 	}
 }

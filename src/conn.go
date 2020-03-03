@@ -38,12 +38,19 @@ func (c *IrcConnection) Connect(nick string, pass string) error {
 		c.send("PASS " + pass)
 		c.send("NICK " + nick)
 		for _, channel := range c.connList {
-			c.send("JOIN #" + channel)
-			fmt.Println("Joining: " + channel)
+			c.Join(channel)
 		}
 		c.isConnected = true
 	}
 	return nil
+}
+
+func (c *IrcConnection) Join(channel string) {
+	c.send("JOIN #" + channel)
+}
+
+func (c *IrcConnection) Part(channel string) {
+	c.send("PART #" + channel)
 }
 
 // Disconnect from the IRC server
@@ -83,8 +90,7 @@ func (c *IrcConnection) Recv() (string, error) {
 			return "", err
 		}
 	}
-
-	//fmt.Println("RX: " + message)
+	fmt.Println("RX: " + message)
 	return message, nil
 }
 

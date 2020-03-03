@@ -53,24 +53,26 @@ func removeChannel(db *sql.DB, username string) {
 	}
 }
 
-func getRegisteredChannels(db *sql.DB) []string {
+func getRegisteredChannels(db *sql.DB) ([]string, []string) {
 	rows, err := db.Query(getChannels)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 
 	defer rows.Close()
 
 	channels := []string{}
+	ids := []string{}
 
 	for rows.Next() {
 		var name, id string
 		if err := rows.Scan(&name, &id); err != nil {
-			return nil
+			return nil, nil
 		}
 		channels = append(channels, name)
+		ids = append(ids, id)
 		fmt.Println(name, id)
 	}
 
-	return channels
+	return channels, ids
 }
