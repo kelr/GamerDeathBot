@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"github.com/kelr/go-twitch-api/twitchapi"
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
@@ -12,6 +11,8 @@ import (
 const (
 	botNick       = ""
 	botPass       = ""
+	clientID      = ""
+    dbInfo        = ""
 	regexUsername = `\w+`
 	regexChannel  = `#\w+`
 	regexMessage  = `^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :`
@@ -39,15 +40,12 @@ func parseMessage(db *sql.DB, channelMap *map[string]*ChatChannel, channel strin
 		fmt.Println("UNREGISTERED " + username)
 		removeChannel(db, username)
 	} else if reGreeting.FindString(message) != "" {
-        fmt.Println("GREETING " + channel[1:])
 		currChannel := (*channelMap)[channel[1:]]
 		currChannel.SendGreeting(username)
 	} else if reFarewell.FindString(message) != "" {
-        fmt.Println("FAREWELL " + channel[1:])
 		currChannel := (*channelMap)[channel[1:]]
 		currChannel.SendFarewell(username)
 	} else if message == "!gamerdeath" {
-        fmt.Println("GD " + channel[1:])
 		currChannel := (*channelMap)[channel[1:]]
 		currChannel.SendGamerdeath()
 	}
@@ -55,7 +53,7 @@ func parseMessage(db *sql.DB, channelMap *map[string]*ChatChannel, channel strin
 
 func main() {
 	//api := twitchapi.NewTwitchClient(clientID)
-	db, err := sql.Open("postgres", "")
+	db, err := sql.Open("postgres", dbInfo)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -71,7 +69,7 @@ func main() {
 	for _, channel := range connList {
 		// TODO channel id
 		channelMap[channel] = NewChatChannel(channel, "123", irc)
-        fmt.Println("Registered: " + channel)
+		fmt.Println("Registered: " + channel)
 	}
 
 	for {
