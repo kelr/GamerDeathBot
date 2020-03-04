@@ -27,7 +27,7 @@ func insertDB(db *sql.DB, time time.Time, channel string, username string, messa
 	}
 }
 
-func registerNewChannel(db *sql.DB, username string, id string) {
+func registerNewDBChannel(db *sql.DB, username string, id string) {
 	stmt, err := db.Prepare(insertChannel)
 	if err != nil {
 		fmt.Println(err)
@@ -40,7 +40,7 @@ func registerNewChannel(db *sql.DB, username string, id string) {
 	}
 }
 
-func removeChannel(db *sql.DB, username string) {
+func removeDBChannel(db *sql.DB, username string) {
 	stmt, err := db.Prepare(deleteChannel)
 	if err != nil {
 		fmt.Println(err)

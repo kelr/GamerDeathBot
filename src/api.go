@@ -12,15 +12,13 @@ func getChannelUptime(username string) int {
 
 	client := twitchapi.NewTwitchClient(clientID)
 
-	// Set options, English and only return the top 2 streams
 	opt := &twitchapi.GetStreamsOpt{
 		UserLogin: username,
 	}
 
-	// Returns a GetStreamsResponse object
 	response, err := client.GetStreams(opt)
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Println("Error in API call:", err)
 	}
 
 	if len(response.Data) > 0 {
@@ -28,12 +26,23 @@ func getChannelUptime(username string) int {
 		return int(time.Since(t).Seconds())
 	}
 	return -1
-
 }
 
-// TODO
 func getChannelID(username string) string {
 
-	return "31903323"
+	client := twitchapi.NewTwitchClient(clientID)
 
+	opt := &twitchapi.GetUsersOpt{
+		Login: username,
+	}
+
+	response, err := client.GetUsers(opt)
+	if err != nil {
+		fmt.Println("Error in API call:", err)
+	}
+
+	if len(response.Data) > 0 {
+		return response.Data[0].ID
+	}
+	return ""
 }

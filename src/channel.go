@@ -40,7 +40,6 @@ func (c *ChatChannel) SendGreeting(targetUser string) {
 		c.conn.Chat(c.channelName, getRandomGreeting())
 		go c.setGreetingTimer()
 	}
-
 }
 
 func (c *ChatChannel) SendFarewell(targetUser string) {
@@ -67,6 +66,20 @@ func (c *ChatChannel) SendRegistered(targetUser string) {
 func (c *ChatChannel) SendUnregistered(targetUser string) {
 	if c.isRegisterReady {
 		c.conn.Chat(c.channelName, "I left your chat, "+targetUser+"!")
+		go c.setRegisterCooldown()
+	}
+}
+
+func (c *ChatChannel) SendRegisterError(targetUser string) {
+	if c.isRegisterReady {
+		c.conn.Chat(c.channelName, "I'm already in your chat, "+targetUser+"!")
+		go c.setRegisterCooldown()
+	}
+}
+
+func (c *ChatChannel) SendUnRegisterError(targetUser string) {
+	if c.isRegisterReady {
+		c.conn.Chat(c.channelName, "I've already left your chat, "+targetUser+"!")
 		go c.setRegisterCooldown()
 	}
 }
