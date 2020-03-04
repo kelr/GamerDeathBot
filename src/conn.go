@@ -10,14 +10,16 @@ import (
 const (
 	ircHostURL  = "irc.twitch.tv"
 	ircHostPort = "6667"
+	rxBufSize   = 4096
+	txQueueSize = 100
 )
 
 type IrcConnection struct {
 	conn        net.Conn
 	isConnected bool
 	connList    []string
-	txQueue chan string
-	control chan bool
+	txQueue     chan string
+	control     chan bool
 }
 
 // Returns a new IRC Client
@@ -26,8 +28,8 @@ func NewIRCConnection(conns []string) *IrcConnection {
 		conn:        nil,
 		isConnected: false,
 		connList:    conns,
-		txQueue: make(chan string, 100),
-		control: make(chan bool),
+		txQueue:     make(chan string, txQueueSize),
+		control:     make(chan bool),
 	}
 }
 
@@ -51,14 +53,6 @@ func (c *IrcConnection) Connect(nick string, pass string) error {
 	return nil
 }
 
-func (c *IrcConnection) Join(channel string) {
-	c.send("JOIN #" + channel)
-}
-
-func (c *IrcConnection) Part(channel string) {
-	c.send("PART #" + channel)
-}
-
 // Disconnect from the IRC server
 func (c *IrcConnection) Disconnect() error {
 	if c.isConnected {
@@ -73,30 +67,38 @@ func (c *IrcConnection) Disconnect() error {
 	return nil
 }
 
+func (c *IrcConnection) Join(channel string) {
+	c.send("JOIN #" + channel)
+}
+
+func (c *IrcConnection) Part(channel string) {
+	c.send("PART #" + channel)
+}
+
 // Send a chat message to an IRC channel
 func (c *IrcConnection) Chat(channel string, message string) {
 	c.txQueue <- "PRIVMSG #" + channel + " : " + message
-
 }
 
 // Rate limit the transmission of messages to the IRC server
 func (c *IrcConnection) rateLimiter() {
 	for {
 		select {
-        case <-c.control:
-            return
-        case msg := <-c.txQueue:
-            c.send(msg)
-        }
-        time.Sleep(2 * time.Second)
+		case <-c.control:
+			return
+		case msg := <-c.txQueue:
+			c.send(msg)
+		}
+		time.Sleep(2 * time.Second)
 	}
 }
 
 // Receieve data from the IRC connection. Handles ping pong automatically.
 func (c *IrcConnection) Recv() (string, error) {
-	buf := make([]byte, 4096)
+	buf := make([]byte, rxBufSize)
 	len, err := c.conn.Read(buf)
 	if err != nil {
+		fmt.Println(err)
 		c.Disconnect()
 		return "", err
 	}
@@ -111,12 +113,18 @@ func (c *IrcConnection) Recv() (string, error) {
 			return "", err
 		}
 	}
-	fmt.Println("RX: " + message)
+	//fmt.Println("RX: " + message)
 	return message, nil
 }
 
 // Raw send to the socket
-func (c *IrcConnection) send(message string) {
-	fmt.Fprintf(c.conn, message+"\r\n")
+func (c *IrcConnection) send(message string) error {
+	_, err := fmt.Fprintf(c.conn, message+"\r\n")
+	if err != nil {
+		fmt.Println(err)
+		c.Disconnect()
+		return err
+	}
 	fmt.Println("TX: " + message)
+	return nil
 }

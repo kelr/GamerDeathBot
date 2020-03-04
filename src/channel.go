@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"math/rand"
 	"time"
 )
 
@@ -10,6 +12,7 @@ const (
 	gamerdeathCooldown = 60
 	registerCooldown   = 1
 	reminderPeriod     = 10800
+	offlineCheckRate   = 5
 )
 
 type ChatChannel struct {
@@ -20,6 +23,59 @@ type ChatChannel struct {
 	isFarewellReady   bool
 	isGamerdeathReady bool
 	isRegisterReady   bool
+}
+
+var GreetingResponses = []string{
+	"Hi",
+	"Hello",
+	"Hiya",
+	"Hey",
+	"Yo",
+	"What's up",
+	"How's it going",
+	"Greetings",
+	"Sup",
+	"What's good",
+	"Hey there",
+	"Howdy",
+	"Good to see you",
+	"vvhat's up",
+	"Henlo",
+	"Hovvdy",
+}
+
+var FarewellResponses = []string{
+	"Bye",
+	"Goodnight",
+	"Good night",
+	"Goodbye",
+	"Good bye",
+	"See you",
+	"See ya",
+	"So long",
+	"Farewell",
+	"Later",
+	"Seeya",
+	"Ciao",
+	"Au revoir",
+	"Bon voyage",
+	"Peace",
+	"In a while crocodile",
+	"See you later alligator",
+	"Later alligator",
+	"Have a good one",
+	"l8r",
+	"Later skater",
+	"Catch you on the flip side",
+	"Sayonara",
+	"Auf weidersehen",
+}
+
+var SubGifters = []string{
+	"technotoast",
+	"kelleymcches",
+	"wincerind",
+	"hetero_corgi",
 }
 
 // Returns a new IRC Client
@@ -37,14 +93,14 @@ func NewChatChannel(username string, channelId string, connection *IrcConnection
 
 func (c *ChatChannel) SendGreeting(targetUser string) {
 	if c.isGreetingReady {
-		c.conn.Chat(c.channelName, getRandomGreeting())
+		c.conn.Chat(c.channelName, getRandomGreeting(targetUser))
 		go c.setGreetingTimer()
 	}
 }
 
 func (c *ChatChannel) SendFarewell(targetUser string) {
 	if c.isFarewellReady {
-		c.conn.Chat(c.channelName, getRandomFarewell())
+		c.conn.Chat(c.channelName, getRandomFarewell(targetUser))
 		go c.setFarewellTimer()
 	}
 }
@@ -87,28 +143,40 @@ func (c *ChatChannel) SendUnRegisterError(targetUser string) {
 func (c *ChatChannel) StartGetupTimer() {
 	for {
 		uptime := getChannelUptime(c.channelName)
-
 		if uptime != -1 {
 			// Timer ticks at the next 3 hour mark determined by uptime
 			timer := time.NewTimer(time.Duration(reminderPeriod-(uptime%reminderPeriod)) * time.Second)
 			<-timer.C
 			if c.conn.isConnected {
+				fmt.Println("TIMER TICK")
 				c.conn.Chat(c.channelName, "MrDestructoid "+c.channelName+" alert! It's been 3 hours and its time to prevent Gamer Death!")
 			}
 		} else {
-			time.Sleep(5 * time.Second)
+			time.Sleep(time.Duration(offlineCheckRate) * time.Second)
 		}
 	}
 }
 
-// TODO lists
-func getRandomGreeting() string {
-	return "hi"
+func getRandomGreeting(targetUser string) string {
+	n := rand.Int() % len(GreetingResponses)
+	response := GreetingResponses[n] + " " + targetUser + " etalWave"
+
+	if targetUser == "evanito" {
+		response = response + " You are my favorite chatter :)"
+	}
+
+	for _, sub := range SubGifters {
+		if sub == targetUser {
+			response = response + " Thank you for the sub btw! :)"
+			break
+		}
+	}
+	return response
 }
 
-// TODO lists
-func getRandomFarewell() string {
-	return "bye"
+func getRandomFarewell(targetUser string) string {
+	n := rand.Int() % len(FarewellResponses)
+	return FarewellResponses[n] + " " + targetUser + " etalWave"
 }
 
 func (c *ChatChannel) setGreetingTimer() {
