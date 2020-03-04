@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 )
 
 const (
@@ -15,6 +16,8 @@ type IrcConnection struct {
 	conn        net.Conn
 	isConnected bool
 	connList    []string
+	txQueue chan string
+	control chan bool
 }
 
 // Returns a new IRC Client
@@ -23,6 +26,8 @@ func NewIRCConnection(conns []string) *IrcConnection {
 		conn:        nil,
 		isConnected: false,
 		connList:    conns,
+		txQueue: make(chan string, 100),
+		control: make(chan bool),
 	}
 }
 
@@ -35,6 +40,7 @@ func (c *IrcConnection) Connect(nick string, pass string) error {
 			return err
 		}
 		c.conn = conn
+		go c.rateLimiter()
 		c.send("PASS " + pass)
 		c.send("NICK " + nick)
 		for _, channel := range c.connList {
@@ -56,6 +62,7 @@ func (c *IrcConnection) Part(channel string) {
 // Disconnect from the IRC server
 func (c *IrcConnection) Disconnect() error {
 	if c.isConnected {
+		c.control <- true
 		err := c.conn.Close()
 		if err != nil {
 			fmt.Println(err)
@@ -68,7 +75,21 @@ func (c *IrcConnection) Disconnect() error {
 
 // Send a chat message to an IRC channel
 func (c *IrcConnection) Chat(channel string, message string) {
-	c.send("PRIVMSG #" + channel + " :" + message)
+	c.txQueue <- "PRIVMSG #" + channel + " : " + message
+
+}
+
+// Rate limit the transmission of messages to the IRC server
+func (c *IrcConnection) rateLimiter() {
+	for {
+		select {
+        case <-c.control:
+            return
+        case msg := <-c.txQueue:
+            c.send(msg)
+        }
+        time.Sleep(2 * time.Second)
+	}
 }
 
 // Receieve data from the IRC connection. Handles ping pong automatically.
