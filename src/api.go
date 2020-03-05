@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"encoding/json"
 	"fmt"
 	"github.com/kelr/go-twitch-api/twitchapi"
 	"time"

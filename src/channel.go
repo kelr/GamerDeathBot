@@ -12,7 +12,7 @@ const (
 	gamerdeathCooldown = 60
 	registerCooldown   = 1
 	reminderPeriod     = 10800
-	offlineCheckRate   = 5
+	offlineCheckRate   = 300
 )
 
 type ChatChannel struct {
