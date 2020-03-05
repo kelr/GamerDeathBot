@@ -147,7 +147,7 @@ func (c *ChatChannel) StartGetupTimer() {
 			// Timer ticks at the next 3 hour mark determined by uptime
 			timer := time.NewTimer(time.Duration(reminderPeriod-(uptime%reminderPeriod)) * time.Second)
 			<-timer.C
-			if c.conn.isConnected {
+			if c.conn.isConnected && (getChannelUptime(c.channelName) != -1) {
 				fmt.Println("TIMER TICK")
 				c.conn.Chat(c.channelName, "MrDestructoid "+c.channelName+" alert! It's been 3 hours and its time to prevent Gamer Death!")
 			}
