@@ -50,6 +50,7 @@ func joinChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*Ch
 	go registerNewDBChannel(db, username, id)
 	irc.Join(username)
 	(*channelTransmit)[username] = NewChatChannel(username, id, irc)
+	go (*channelTransmit)[username].StartGetupTimer()
 
 	botChannel.SendRegistered(username)
 }
@@ -67,6 +68,7 @@ func leaveChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*C
 	// Remove the DB entry, leave the IRC channel, delete the channel from the status map
 	go removeDBChannel(db, username)
 	irc.Part(username)
+	(*channelTransmit)[username].StopGetupTimer()
 	delete((*channelTransmit), username)
 
 	botChannel.SendUnregistered(username)
