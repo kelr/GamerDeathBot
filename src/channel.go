@@ -143,24 +143,27 @@ func (c *ChatChannel) SendUnRegisterError(targetUser string) {
 }
 
 func (c *ChatChannel) StartGetupTimer() {
+	fmt.Println("Starting new getup timer thread for: ", c.channelName)
 	for {
 		select {
 		case <-c.timerStop:
-			fmt.Println("Stopping getup timer thread")
+			fmt.Println("Stopping getup timer thread for: ", c.channelName)
 			return
 		default:
 			uptime := getChannelUptime(apiClient, c.channelName)
 			if uptime != -1 {
+				waitTime := reminderPeriod-(uptime%reminderPeriod)
+				fmt.Println("Waiting on tick for: ", c.channelName, " in: ", waitTime)
 				// Timer ticks at the next 3 hour mark determined by uptime
-				timer := time.NewTimer(time.Duration(reminderPeriod-(uptime%reminderPeriod)) * time.Second)
+				timer := time.NewTimer(time.Duration(waitTime) * time.Second)
 				<-timer.C
 				if c.conn.isConnected && (getChannelUptime(apiClient, c.channelName) != -1) {
 					select {
 					case <-c.timerStop:
-						fmt.Println("Stopping getup timer from inner")
+						fmt.Println("Stopping getup timer from inner for: ", c.channelName)
 						return
 					default:
-						fmt.Println("TIMER TICK")
+						fmt.Println("TIMER TICK: ", c.channelName)
 						c.conn.Chat(c.channelName, "MrDestructoid "+c.channelName+" alert! It's been 3 hours and its time to prevent Gamer Death!")
 					}
 				}
