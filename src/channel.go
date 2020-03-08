@@ -149,12 +149,12 @@ func (c *ChatChannel) StartGetupTimer() {
 	        fmt.Println("Stopping getup timer thread")
 	        return
 	    default:
-			uptime := getChannelUptime(c.channelName)
+			uptime := getChannelUptime(apiClient, c.channelName)
 			if uptime != -1 {
 				// Timer ticks at the next 3 hour mark determined by uptime
 				timer := time.NewTimer(time.Duration(reminderPeriod-(uptime%reminderPeriod)) * time.Second)
 				<-timer.C
-				if c.conn.isConnected && (getChannelUptime(c.channelName) != -1) {
+				if c.conn.isConnected && (getChannelUptime(apiClient, c.channelName) != -1) {
 					select {
                         case <- c.timerStop:
                             fmt.Println("Stopping getup timer from inner")
