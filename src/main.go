@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/kelr/go-twitch-api/twitchapi"
 	_ "github.com/lib/pq"
 	"math/rand"
 	"regexp"
@@ -23,12 +24,12 @@ const (
 )
 
 var (
-	reUser = regexp.MustCompile(regexUsername)
-	reChannel = regexp.MustCompile(regexChannel)
-	reMessage = regexp.MustCompile(regexMessage)
+	reUser     = regexp.MustCompile(regexUsername)
+	reChannel  = regexp.MustCompile(regexChannel)
+	reMessage  = regexp.MustCompile(regexMessage)
 	reGreeting = regexp.MustCompile(regexGreeting)
 	reFarewell = regexp.MustCompile(regexFarewell)
-	apiClient = twitchapi.NewTwitchClient(clientID)
+	apiClient  = twitchapi.NewTwitchClient(clientID)
 )
 
 // Parses out channel, username, and message strings from chat message
