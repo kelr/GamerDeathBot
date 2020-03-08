@@ -7,10 +7,7 @@ import (
 )
 
 // Returns channel uptime in an integer number of seconds or -1 if not live
-func getChannelUptime(username string) int {
-
-	client := twitchapi.NewTwitchClient(clientID)
-
+func getChannelUptime(client *twitchapi.TwitchClient, username string) int {
 	opt := &twitchapi.GetStreamsOpt{
 		UserLogin: username,
 	}
@@ -27,10 +24,7 @@ func getChannelUptime(username string) int {
 	return -1
 }
 
-func getChannelID(username string) string {
-
-	client := twitchapi.NewTwitchClient(clientID)
-
+func getChannelID(client *twitchapi.TwitchClient, username string) string {
 	opt := &twitchapi.GetUsersOpt{
 		Login: username,
 	}

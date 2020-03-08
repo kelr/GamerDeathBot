@@ -23,6 +23,7 @@ type ChatChannel struct {
 	isFarewellReady   bool
 	isGamerdeathReady bool
 	isRegisterReady   bool
+	timerStop         chan bool
 }
 
 var GreetingResponses = []string{
@@ -88,6 +89,7 @@ func NewChatChannel(username string, channelId string, connection *IrcConnection
 		isFarewellReady:   true,
 		isGamerdeathReady: true,
 		isRegisterReady:   true,
+		timerStop:         make(chan bool, 1),
 	}
 }
 
@@ -142,19 +144,35 @@ func (c *ChatChannel) SendUnRegisterError(targetUser string) {
 
 func (c *ChatChannel) StartGetupTimer() {
 	for {
-		uptime := getChannelUptime(c.channelName)
-		if uptime != -1 {
-			// Timer ticks at the next 3 hour mark determined by uptime
-			timer := time.NewTimer(time.Duration(reminderPeriod-(uptime%reminderPeriod)) * time.Second)
-			<-timer.C
-			if c.conn.isConnected {
-				fmt.Println("TIMER TICK")
-				c.conn.Chat(c.channelName, "MrDestructoid "+c.channelName+" alert! It's been 3 hours and its time to prevent Gamer Death!")
+		select {
+		case <-c.timerStop:
+			fmt.Println("Stopping getup timer thread")
+			return
+		default:
+			uptime := getChannelUptime(apiClient, c.channelName)
+			if uptime != -1 {
+				// Timer ticks at the next 3 hour mark determined by uptime
+				timer := time.NewTimer(time.Duration(reminderPeriod-(uptime%reminderPeriod)) * time.Second)
+				<-timer.C
+				if c.conn.isConnected && (getChannelUptime(apiClient, c.channelName) != -1) {
+					select {
+					case <-c.timerStop:
+						fmt.Println("Stopping getup timer from inner")
+						return
+					default:
+						fmt.Println("TIMER TICK")
+						c.conn.Chat(c.channelName, "MrDestructoid "+c.channelName+" alert! It's been 3 hours and its time to prevent Gamer Death!")
+					}
+				}
+			} else {
+				time.Sleep(time.Duration(offlineCheckRate) * time.Second)
 			}
-		} else {
-			time.Sleep(time.Duration(offlineCheckRate) * time.Second)
 		}
 	}
+}
+
+func (c *ChatChannel) StopGetupTimer() {
+	c.timerStop <- true
 }
 
 func getRandomGreeting(targetUser string) string {

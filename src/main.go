@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/kelr/go-twitch-api/twitchapi"
 	_ "github.com/lib/pq"
 	"math/rand"
 	"regexp"
@@ -13,6 +14,7 @@ const (
 	botNick       = ""
 	botPass       = ""
 	clientID      = ""
+	clientSecret  = ""
 	dbInfo        = ""
 	regexUsername = `\w+`
 	regexChannel  = `#\w+`
@@ -21,11 +23,14 @@ const (
 	regexFarewell = `(?i)(bye|goodnight|good night|goodbye|good bye|see you|see ya|so long|farewell|later|seeya|ciao|au revoir|bon voyage|peace|in a while crocodile|see you later alligator|later alligator|have a good one|igottago|l8r|later skater|catch you on the flip side|bye-bye|sayonara) (@*GamerDeathBot|gdb)`
 )
 
-var reUser = regexp.MustCompile(regexUsername)
-var reChannel = regexp.MustCompile(regexChannel)
-var reMessage = regexp.MustCompile(regexMessage)
-var reGreeting = regexp.MustCompile(regexGreeting)
-var reFarewell = regexp.MustCompile(regexFarewell)
+var (
+	reUser     = regexp.MustCompile(regexUsername)
+	reChannel  = regexp.MustCompile(regexChannel)
+	reMessage  = regexp.MustCompile(regexMessage)
+	reGreeting = regexp.MustCompile(regexGreeting)
+	reFarewell = regexp.MustCompile(regexFarewell)
+	apiClient  = twitchapi.NewTwitchClient(clientID)
+)
 
 // Parses out channel, username, and message strings from chat message
 func splitMessage(msg string) (string, string, string) {
@@ -42,7 +47,7 @@ func joinChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*Ch
 	}
 
 	// Add a new DB entry, join the IRC channel, add the channel to the status map
-	id := getChannelID(username)
+	id := getChannelID(apiClient, username)
 	if id == "" {
 		fmt.Println("ERROR: API Can't get ID for: " + username)
 	}
@@ -50,6 +55,7 @@ func joinChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*Ch
 	go registerNewDBChannel(db, username, id)
 	irc.Join(username)
 	(*channelTransmit)[username] = NewChatChannel(username, id, irc)
+	go (*channelTransmit)[username].StartGetupTimer()
 
 	botChannel.SendRegistered(username)
 }
@@ -67,6 +73,7 @@ func leaveChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*C
 	// Remove the DB entry, leave the IRC channel, delete the channel from the status map
 	go removeDBChannel(db, username)
 	irc.Part(username)
+	(*channelTransmit)[username].StopGetupTimer()
 	delete((*channelTransmit), username)
 
 	botChannel.SendUnregistered(username)
