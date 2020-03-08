@@ -29,7 +29,7 @@ var (
 	reMessage  = regexp.MustCompile(regexMessage)
 	reGreeting = regexp.MustCompile(regexGreeting)
 	reFarewell = regexp.MustCompile(regexFarewell)
-	apiClient  = twitchapi.NewTwitchClient(clientID)
+	apiClient  = twitchapi.NewTwitchClient(clientID, clientSecret)
 )
 
 // Parses out channel, username, and message strings from chat message
