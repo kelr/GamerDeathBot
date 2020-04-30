@@ -8,14 +8,10 @@ import (
 	"math/rand"
 	"regexp"
 	"time"
+	"os"
 )
 
 const (
-	botNick       = ""
-	botPass       = ""
-	clientID      = ""
-	clientSecret  = ""
-	dbInfo        = ""
 	regexUsername = `\w+`
 	regexChannel  = `#\w+`
 	regexMessage  = `^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :`
@@ -24,6 +20,12 @@ const (
 )
 
 var (
+	botNick       = os.Getenv("GDB_IRC_NICK")
+	botPass       = os.Getenv("GDB_IRC_PASS")
+	clientID      = os.Getenv("GDB_CLIENT_ID")
+	clientSecret  = os.Getenv("GDB_SECRET")
+	dbInfo        = os.Getenv("GDB_DB_INFO")
+
 	reUser     = regexp.MustCompile(regexUsername)
 	reChannel  = regexp.MustCompile(regexChannel)
 	reMessage  = regexp.MustCompile(regexMessage)
