@@ -77,6 +77,7 @@ var SubGifters = []string{
 	"kelleymcches",
 	"wincerind",
 	"hetero_corgi",
+	"spoonlessalakazam",
 }
 
 // Returns a new IRC Client
@@ -150,14 +151,20 @@ func (c *ChatChannel) StartGetupTimer() {
 			fmt.Println("Stopping getup timer thread for: ", c.channelName)
 			return
 		default:
-			uptime := getChannelUptime(apiClient, c.channelName)
+			uptime, err := getChannelUptime(apiClient, c.channelName)
+			if err != nil {
+				time.Sleep(time.Duration(60) * time.Second)
+				continue
+			}
+
 			if uptime != -1 {
-				waitTime := reminderPeriod-(uptime%reminderPeriod)
+				waitTime := reminderPeriod - (uptime % reminderPeriod)
 				fmt.Println("Waiting on tick for: ", c.channelName, " in: ", waitTime)
 				// Timer ticks at the next 3 hour mark determined by uptime
 				timer := time.NewTimer(time.Duration(waitTime) * time.Second)
 				<-timer.C
-				if c.conn.isConnected && (getChannelUptime(apiClient, c.channelName) != -1) {
+				uptime, _ = getChannelUptime(apiClient, c.channelName)
+				if c.conn.isConnected && uptime != -1 {
 					select {
 					case <-c.timerStop:
 						fmt.Println("Stopping getup timer from inner for: ", c.channelName)
