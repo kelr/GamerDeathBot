@@ -23,4 +23,4 @@ FROM scratch
 
 COPY --from=builder /dist/gamerdeathbot /
 
-CMD exec gamerdeathbot
+CMD ["./gamerdeathbot"]
