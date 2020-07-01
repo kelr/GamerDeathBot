@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/kelr/go-twitch-api/twitchapi"
+	"github.com/kelr/gundyr/helix"
 	"time"
 )
 
 // Returns channel uptime in an integer number of seconds or -1 if not live
-func getChannelUptime(client *twitchapi.TwitchClient, username string) (int, error) {
-	opt := &twitchapi.GetStreamsOpt{
+func getChannelUptime(client *helix.Client, username string) (int, error) {
+	opt := &helix.GetStreamsOpt{
 		UserLogin: username,
 	}
 
@@ -25,9 +25,9 @@ func getChannelUptime(client *twitchapi.TwitchClient, username string) (int, err
 	return -1, nil
 }
 
-func getChannelID(client *twitchapi.TwitchClient, username string) string {
-	opt := &twitchapi.GetUsersOpt{
-		Login: username,
+func getChannelID(client *helix.Client, username string) string {
+	opt := &helix.GetUsersOpt{
+		Login: []string{username},
 	}
 
 	response, err := client.GetUsers(opt)

@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/kelr/go-twitch-api/twitchapi"
+	"github.com/kelr/gundyr/helix"
 	_ "github.com/lib/pq"
 	"math/rand"
 	"regexp"
@@ -31,7 +31,7 @@ var (
 	reMessage  = regexp.MustCompile(regexMessage)
 	reGreeting = regexp.MustCompile(regexGreeting)
 	reFarewell = regexp.MustCompile(regexFarewell)
-	apiClient  = twitchapi.NewTwitchClient(clientID, clientSecret)
+	apiClient *helix.Client
 )
 
 // Parses out channel, username, and message strings from chat message
@@ -96,8 +96,20 @@ func parseMessage(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*C
 	}
 }
 
-func main() {
+func init() {
 	rand.Seed(time.Now().Unix())
+	tmp, err := helix.NewClient(&helix.Config{
+		ClientID: clientID,
+		ClientSecret: clientSecret,
+	})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	apiClient = tmp
+}
+
+func main() {
 	db, err := sql.Open("postgres", dbInfo)
 	if err != nil {
 		fmt.Println(err)
