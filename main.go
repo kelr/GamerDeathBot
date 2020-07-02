@@ -101,9 +101,6 @@ func init() {
 }
 
 func main() {
-	if clientID != "y3s7zuy35l3nvrcxhd4lvozw5ycnb6" {
-		fmt.Println("[" +  clientID + "]")
-	}
 	config := &helix.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
