@@ -1,0 +1,14 @@
+version: '3'
+
+networks:
+  default:
+
+services:
+  gamerdeathbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gamerdeathbot
+    restart: unless-stopped
+    env_file:
+      - gdb.env
