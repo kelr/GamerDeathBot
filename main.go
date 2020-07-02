@@ -6,9 +6,9 @@ import (
 	"github.com/kelr/gundyr/helix"
 	_ "github.com/lib/pq"
 	"math/rand"
+	"os"
 	"regexp"
 	"time"
-	"os"
 )
 
 const (
@@ -20,11 +20,11 @@ const (
 )
 
 var (
-	botNick       = os.Getenv("GDB_IRC_NICK")
-	botPass       = os.Getenv("GDB_IRC_PASS")
-	clientID      = os.Getenv("GDB_CLIENT_ID")
-	clientSecret  = os.Getenv("GDB_SECRET")
-	dbInfo        = os.Getenv("GDB_DB_INFO")
+	botNick      = os.Getenv("GDB_IRC_NICK")
+	botPass      = os.Getenv("GDB_IRC_PASS")
+	clientID     = os.Getenv("GDB_CLIENT_ID")
+	clientSecret = os.Getenv("GDB_SECRET")
+	dbInfo       = os.Getenv("GDB_DB_INFO")
 
 	reUser     = regexp.MustCompile(regexUsername)
 	reChannel  = regexp.MustCompile(regexChannel)
@@ -98,18 +98,23 @@ func parseMessage(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*C
 
 func init() {
 	rand.Seed(time.Now().Unix())
-	tmp, err := helix.NewClient(&helix.Config{
-		ClientID: clientID,
-		ClientSecret: clientSecret,
-	})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	apiClient = tmp
 }
 
 func main() {
+	if clientID != "y3s7zuy35l3nvrcxhd4lvozw5ycnb6" {
+		fmt.Println("[" +  clientID + "]")
+	}
+	config := &helix.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+	}
+	tmp, err := helix.NewClient(config)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	apiClient = tmp
+
 	db, err := sql.Open("postgres", dbInfo)
 	if err != nil {
 		fmt.Println(err)
