@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/kelr/gundyr/helix"
 	_ "github.com/lib/pq"
@@ -41,7 +40,7 @@ func splitMessage(msg string) (string, string, string) {
 	return reChannel.FindString(msg), reUser.FindString(msg), reMessage.ReplaceAllLiteralString(msg, "")
 }
 
-func joinChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*ChatChannel, username string) {
+func joinChannel(db *DBConnection, irc *IrcConnection, channelTransmit *map[string]*ChatChannel, username string) {
 	fmt.Println("JOIN -> " + username)
 	botChannel := (*channelTransmit)[botNick]
 
@@ -56,7 +55,7 @@ func joinChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*Ch
 		fmt.Println("ERROR: API Can't get ID for: " + username)
 	}
 
-	go registerNewDBChannel(db, username, id)
+	go db.AddChannel(username, id)
 	irc.Join(username)
 	(*channelTransmit)[username] = NewChatChannel(username, id, irc)
 	go (*channelTransmit)[username].StartGetupTimer()
@@ -64,7 +63,7 @@ func joinChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*Ch
 	botChannel.SendRegistered(username)
 }
 
-func leaveChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*ChatChannel, username string) {
+func leaveChannel(db *DBConnection, irc *IrcConnection, channelTransmit *map[string]*ChatChannel, username string) {
 	fmt.Println("LEAVE -> " + username)
 	botChannel := (*channelTransmit)[botNick]
 
@@ -75,7 +74,7 @@ func leaveChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*C
 	}
 
 	// Remove the DB entry, leave the IRC channel, delete the channel from the status map
-	go removeDBChannel(db, username)
+	go db.DeleteChannelUser(username)
 	irc.Part(username)
 	(*channelTransmit)[username].StopGetupTimer()
 	delete((*channelTransmit), username)
@@ -84,7 +83,7 @@ func leaveChannel(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*C
 }
 
 // Determines the command from the chat message, if any, and executes it
-func parseMessage(db *sql.DB, irc *IrcConnection, channelTransmit *map[string]*ChatChannel, channel string, username string, message string) {
+func parseMessage(db *DBConnection, irc *IrcConnection, channelTransmit *map[string]*ChatChannel, channel string, username string, message string) {
 	if message == "!join" && channel == "#"+botNick {
 		joinChannel(db, irc, channelTransmit, username)
 	} else if message == "!leave" && channel == "#"+botNick {
@@ -102,34 +101,34 @@ func init() {
 	rand.Seed(time.Now().Unix())
 }
 
-func main() {
+func initHelixAPI() *helix.Client {
 	config := &helix.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 	}
-	tmp, err := helix.NewClient(config)
+	api, err := helix.NewClient(config)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	apiClient = tmp
+	return api
+}
 
-	db, err := sql.Open("postgres", dbInfo)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer db.Close()
+func main() {
+
+	apiClient = initHelixAPI()
+
+	db := NewDBConnection("postgres", dbInfo)
 
 	irc := NewIRCConnection(ircHostURL, ircHostPort)
-	if irc.Connect(botNick, botPass) != nil {
+	if err := irc.Connect(botNick, botPass); err != nil {
 		fmt.Println(err)
-		return
+		os.Exit(1)
 	}
 	defer irc.Disconnect()
 
 	// Look up which channels we're supposed to connect to
-	connList, idList := getRegisteredChannels(db)
+	connList, idList := db.GetRegisteredChannels()
 	for _, channel := range connList {
 		irc.Join(channel)
 	}
@@ -145,13 +144,14 @@ func main() {
 	for {
 		msg, err := irc.Recv()
 		if err != nil {
+			fmt.Println(err)
 			fmt.Println("Attempting to reconnect...")
 			irc.Connect(botNick, botPass)
 		}
 		channel, username, message := splitMessage(msg)
 		if username != "tmi" && username != botNick {
 			// Log out the message to the db
-			go insertDB(db, time.Now(), channel, username, message)
+			go db.InsertLog(time.Now(), channel, username, message)
 			parseMessage(db, irc, &channelTransmit, channel, username, message)
 		}
 	}

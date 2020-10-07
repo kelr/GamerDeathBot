@@ -1,11 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strings"
 	"time"
-	"errors"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 	txQueueSize = 100
 	pingMessage = "PING :tmi.twitch.tv"
 	pongMessage = "PONG :tmi.twitch.tv"
-	rateLimit = 2 * time.Second
+	rateLimit   = 2 * time.Second
 )
 
 // IrcConnection represents a connection state to an IRC server over a TCP socket
@@ -39,7 +39,7 @@ func NewIRCConnection(host string, port string) *IrcConnection {
 }
 
 // Connect to the IRC server, authenticate and join target channels
-// Login is the login username for the account and token is an 
+// Login is the login username for the account and token is an
 // OAuth2 token with Twitch IRC permissions, prefixed with oauth:
 func (c *IrcConnection) Connect(login string, token string) error {
 	if login == "" || token == "" {
@@ -111,7 +111,6 @@ func (c *IrcConnection) Recv() (string, error) {
 	buf := make([]byte, rxBufSize)
 	len, err := c.conn.Read(buf)
 	if err != nil {
-		fmt.Println(err)
 		c.Disconnect()
 		return "", err
 	}
