@@ -18,7 +18,7 @@ const (
 type ChatChannel struct {
 	channelName       string
 	id                string
-	conn              *IrcConnection
+	irc               IRC
 	isGreetingReady   bool
 	isFarewellReady   bool
 	isGamerdeathReady bool
@@ -81,11 +81,11 @@ var SubGifters = []string{
 }
 
 // Returns a new IRC Client
-func NewChatChannel(username string, channelId string, connection *IrcConnection) *ChatChannel {
+func NewChatChannel(username string, channelId string, connection IRC) *ChatChannel {
 	return &ChatChannel{
 		channelName:       username,
 		id:                channelId,
-		conn:              connection,
+		irc:               connection,
 		isGreetingReady:   true,
 		isFarewellReady:   true,
 		isGamerdeathReady: true,
@@ -94,51 +94,59 @@ func NewChatChannel(username string, channelId string, connection *IrcConnection
 	}
 }
 
+func (c *ChatChannel) JoinChannel() {
+	c.irc.Join(c.channelName)
+}
+
+func (c *ChatChannel) LeaveChannel() {
+	c.irc.Part(c.channelName)
+}
+
 func (c *ChatChannel) SendGreeting(targetUser string) {
 	if c.isGreetingReady {
-		c.conn.Chat(c.channelName, getRandomGreeting(targetUser))
+		c.irc.Chat(c.channelName, getRandomGreeting(targetUser))
 		go c.setGreetingTimer()
 	}
 }
 
 func (c *ChatChannel) SendFarewell(targetUser string) {
 	if c.isFarewellReady {
-		c.conn.Chat(c.channelName, getRandomFarewell(targetUser))
+		c.irc.Chat(c.channelName, getRandomFarewell(targetUser))
 		go c.setFarewellTimer()
 	}
 }
 
 func (c *ChatChannel) SendGamerdeath() {
 	if c.isGamerdeathReady {
-		c.conn.Chat(c.channelName, "MrDestructoid Chat, remember to get up and stretch to prevent Gamer Death!")
+		c.irc.Chat(c.channelName, "MrDestructoid Chat, remember to get up and stretch to prevent Gamer Death!")
 		go c.setGamerdeathTimer()
 	}
 }
 
 func (c *ChatChannel) SendRegistered(targetUser string) {
 	if c.isRegisterReady {
-		c.conn.Chat(c.channelName, "I joined your chat, "+targetUser+"!")
+		c.irc.Chat(c.channelName, "I joined your chat, "+targetUser+"!")
 		go c.setRegisterCooldown()
 	}
 }
 
 func (c *ChatChannel) SendUnregistered(targetUser string) {
 	if c.isRegisterReady {
-		c.conn.Chat(c.channelName, "I left your chat, "+targetUser+"!")
+		c.irc.Chat(c.channelName, "I left your chat, "+targetUser+"!")
 		go c.setRegisterCooldown()
 	}
 }
 
 func (c *ChatChannel) SendRegisterError(targetUser string) {
 	if c.isRegisterReady {
-		c.conn.Chat(c.channelName, "I'm already in your chat, "+targetUser+"!")
+		c.irc.Chat(c.channelName, "I'm already in your chat, "+targetUser+"!")
 		go c.setRegisterCooldown()
 	}
 }
 
 func (c *ChatChannel) SendUnRegisterError(targetUser string) {
 	if c.isRegisterReady {
-		c.conn.Chat(c.channelName, "I've already left your chat, "+targetUser+"!")
+		c.irc.Chat(c.channelName, "I've already left your chat, "+targetUser+"!")
 		go c.setRegisterCooldown()
 	}
 }
@@ -164,14 +172,14 @@ func (c *ChatChannel) StartGetupTimer() {
 				timer := time.NewTimer(time.Duration(waitTime) * time.Second)
 				<-timer.C
 				uptime, _ = getChannelUptime(apiClient, c.channelName)
-				if c.conn.isConnected && uptime != -1 {
+				if c.irc.IsConnected() && uptime != -1 {
 					select {
 					case <-c.timerStop:
 						fmt.Println("Stopping getup timer from inner for: ", c.channelName)
 						return
 					default:
 						fmt.Println("TIMER TICK: ", c.channelName)
-						c.conn.Chat(c.channelName, "MrDestructoid "+c.channelName+" alert! It's been 3 hours and its time to prevent Gamer Death!")
+						c.irc.Chat(c.channelName, "MrDestructoid "+c.channelName+" alert! It's been 3 hours and its time to prevent Gamer Death!")
 					}
 				}
 			} else {

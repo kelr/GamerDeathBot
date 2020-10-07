@@ -16,6 +16,17 @@ const (
 	rateLimit   = 2 * time.Second
 )
 
+// IRC is an interface for the underlying IRC connection
+type IRC interface {
+	Connect(login string, token string) error
+	Disconnect() error
+	Join(channel string)
+	Part(channel string)
+	Chat(channel string, message string)
+	Read() (string, error)
+	IsConnected() bool
+}
+
 // IrcConnection represents a connection state to an IRC server over a TCP socket
 type IrcConnection struct {
 	host        string
@@ -57,6 +68,11 @@ func (c *IrcConnection) Connect(login string, token string) error {
 		c.isConnected = true
 	}
 	return nil
+}
+
+// IsConnected returns the connection state
+func (c *IrcConnection) IsConnected() bool {
+	return c.isConnected
 }
 
 func (c *IrcConnection) authenticate(nick string, pass string) {
@@ -106,8 +122,8 @@ func (c *IrcConnection) rateLimiter() {
 	}
 }
 
-// Recv receieve data from the IRC connection. Handles ping pong automatically.
-func (c *IrcConnection) Recv() (string, error) {
+// Read receieve data from the IRC connection. Handles ping pong automatically.
+func (c *IrcConnection) Read() (string, error) {
 	buf := make([]byte, rxBufSize)
 	len, err := c.conn.Read(buf)
 	if err != nil {
@@ -124,11 +140,11 @@ func (c *IrcConnection) Recv() (string, error) {
 	return message, nil
 }
 
-// Handle ping pong, return the next recv instead
+// Handle ping pong, return the next read instead
 func (c *IrcConnection) handlePingPong(message string) (string, error) {
 	if message == pingMessage {
 		c.send(pongMessage)
-		message, err := c.Recv()
+		message, err := c.Read()
 		if err != nil {
 			return "", err
 		}

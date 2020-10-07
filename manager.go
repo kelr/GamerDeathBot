@@ -7,23 +7,26 @@ import (
 // ChannelManager handles all the registered channels for this bot instance.
 type ChannelManager struct {
 	channels map[string]*ChatChannel
+	irc      IRC
 }
 
 // NewChannelManager returns a new Channel Manager
-func NewChannelManager(userList []string, idList []string, irc *IrcConnection) *ChannelManager {
+func NewChannelManager(userList []string, idList []string, irc IRC) *ChannelManager {
 	c := &ChannelManager{
 		channels: make(map[string]*ChatChannel),
+		irc:      irc,
 	}
 	for index, channel := range userList {
-		c.RegisterChannel(channel, idList[index], irc)
+		c.RegisterChannel(channel, idList[index])
 	}
 	return c
 }
 
 // RegisterChannel registers a new channel if it is not already registered.
-func (c *ChannelManager) RegisterChannel(channel string, id string, irc *IrcConnection) {
+func (c *ChannelManager) RegisterChannel(channel string, id string) {
 	if !c.IsRegistered(channel) {
-		c.channels[channel] = NewChatChannel(channel, id, irc)
+		c.channels[channel] = NewChatChannel(channel, id, c.irc)
+		c.channels[channel].JoinChannel()
 		go c.channels[channel].StartGetupTimer()
 	}
 }
@@ -32,6 +35,7 @@ func (c *ChannelManager) RegisterChannel(channel string, id string, irc *IrcConn
 func (c *ChannelManager) UnregisterChannel(channel string) {
 	if c.IsRegistered(channel) {
 		c.channels[channel].StopGetupTimer()
+		c.channels[channel].LeaveChannel()
 		delete(c.channels, channel)
 	}
 }

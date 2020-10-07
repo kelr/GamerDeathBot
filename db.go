@@ -26,10 +26,11 @@ type DB interface {
 type Database interface {
 	Open() error
 	Close() error
-	InsertLog(time time.Time, channel string, username string, message string) error
+	InsertLog(time time.Time, channel string, username string, message string)
 	AddChannel(username string, id string)
 	DeleteChannelUser(username string)
 	DeleteChannelID(id string)
+	GetRegisteredChannels() ([]string, []string)
 }
 
 // DBConnection represents a connection state to the channel Database Server
