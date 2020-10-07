@@ -159,7 +159,7 @@ func (c *ChatChannel) StartGetupTimer() {
 
 			if uptime != -1 {
 				waitTime := reminderPeriod - (uptime % reminderPeriod)
-				fmt.Println("Waiting on tick for: ", c.channelName, " in: ", waitTime)
+				fmt.Println("Waiting on tick for:", c.channelName, "in:", waitTime, "seconds")
 				// Timer ticks at the next 3 hour mark determined by uptime
 				timer := time.NewTimer(time.Duration(waitTime) * time.Second)
 				<-timer.C

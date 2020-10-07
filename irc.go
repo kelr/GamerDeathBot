@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -8,49 +9,59 @@ import (
 )
 
 const (
-	ircHostURL  = "irc.twitch.tv"
-	ircHostPort = "6667"
 	rxBufSize   = 4096
 	txQueueSize = 100
+	pingMessage = "PING :tmi.twitch.tv"
+	pongMessage = "PONG :tmi.twitch.tv"
+	rateLimit   = 2 * time.Second
 )
 
+// IrcConnection represents a connection state to an IRC server over a TCP socket
 type IrcConnection struct {
+	host        string
+	port        string
 	conn        net.Conn
 	isConnected bool
-	connList    []string
 	txQueue     chan string
 	control     chan bool
 }
 
-// Returns a new IRC Client
-func NewIRCConnection(conns []string) *IrcConnection {
+// NewIRCConnection returns a new IRC Client
+func NewIRCConnection(host string, port string) *IrcConnection {
 	return &IrcConnection{
+		host:        host,
+		port:        port,
 		conn:        nil,
 		isConnected: false,
-		connList:    conns,
 		txQueue:     make(chan string, txQueueSize),
 		control:     make(chan bool),
 	}
 }
 
 // Connect to the IRC server, authenticate and join target channels
-func (c *IrcConnection) Connect(nick string, pass string) error {
+// Login is the login username for the account and token is an
+// OAuth2 token with Twitch IRC permissions, prefixed with oauth:
+func (c *IrcConnection) Connect(login string, token string) error {
+	if login == "" || token == "" {
+		return errors.New("IRC cannot connect, missing login or OAuth token")
+	}
 	if !c.isConnected {
-		conn, err := net.Dial("tcp", ircHostURL+":"+ircHostPort)
+		conn, err := net.Dial("tcp", c.host+":"+c.port)
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
 		c.conn = conn
 		go c.rateLimiter()
-		c.send("PASS " + pass)
-		c.send("NICK " + nick)
-		for _, channel := range c.connList {
-			c.Join(channel)
-		}
+		c.authenticate(login, token)
 		c.isConnected = true
 	}
 	return nil
+}
+
+func (c *IrcConnection) authenticate(nick string, pass string) {
+	c.send("PASS " + pass)
+	c.send("NICK " + nick)
 }
 
 // Disconnect from the IRC server
@@ -67,17 +78,19 @@ func (c *IrcConnection) Disconnect() error {
 	return nil
 }
 
+// Join sends a JOIN command to the IRC server to join a channel
 func (c *IrcConnection) Join(channel string) {
 	c.send("JOIN #" + channel)
 }
 
+// Part sends a PART command to the IRC server to leave a channel
 func (c *IrcConnection) Part(channel string) {
 	c.send("PART #" + channel)
 }
 
-// Send a chat message to an IRC channel
+// Chat sends a PRIVMSG to an IRC channel
 func (c *IrcConnection) Chat(channel string, message string) {
-	c.txQueue <- "PRIVMSG #" + channel + " : " + message
+	c.txQueue <- "PRIVMSG #" + channel + " :" + message
 }
 
 // Rate limit the transmission of messages to the IRC server
@@ -89,31 +102,38 @@ func (c *IrcConnection) rateLimiter() {
 		case msg := <-c.txQueue:
 			c.send(msg)
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(rateLimit)
 	}
 }
 
-// Receieve data from the IRC connection. Handles ping pong automatically.
+// Recv receieve data from the IRC connection. Handles ping pong automatically.
 func (c *IrcConnection) Recv() (string, error) {
 	buf := make([]byte, rxBufSize)
 	len, err := c.conn.Read(buf)
 	if err != nil {
-		fmt.Println(err)
 		c.Disconnect()
 		return "", err
 	}
 	// Cast to string, trim newlines
 	message := strings.TrimSpace(string(buf[:len]))
+	message, err = c.handlePingPong(message)
+	if err != nil {
+		return "", err
+	}
 
-	// Handle ping pong, return the next recv
-	if message == "PING :tmi.twitch.tv" {
-		c.send("PONG :tmi.twitch.tv")
-		message, err = c.Recv()
+	return message, nil
+}
+
+// Handle ping pong, return the next recv instead
+func (c *IrcConnection) handlePingPong(message string) (string, error) {
+	if message == pingMessage {
+		c.send(pongMessage)
+		message, err := c.Recv()
 		if err != nil {
 			return "", err
 		}
+		return message, nil
 	}
-	//fmt.Println("RX: " + message)
 	return message, nil
 }
 
