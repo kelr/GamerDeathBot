@@ -157,7 +157,6 @@ func main() {
 	}
 
 	manager := NewChannelManager(connList, idList, irc)
-	manager.StartAllTimers()
 
 	// Main thread rxs on connection, logs to db and responds
 	for {

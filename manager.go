@@ -36,13 +36,6 @@ func (c *ChannelManager) UnregisterChannel(channel string) {
 	}
 }
 
-// StartAllTimers starts all registered timers
-func (c *ChannelManager) StartAllTimers() {
-	for channel := range c.channels {
-		go c.channels[channel].StartGetupTimer()
-	}
-}
-
 // GetChannel retrieves a registered channel
 func (c *ChannelManager) GetChannel(channel string) (*ChatChannel, error) {
 	if c.IsRegistered(channel) {
