@@ -119,6 +119,11 @@ func main() {
 	apiClient = initHelixAPI()
 
 	db := NewDBConnection("postgres", dbInfo)
+	if err := db.Open(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer db.Close()
 
 	irc := NewIRCConnection(ircHostURL, ircHostPort)
 	if err := irc.Connect(botNick, botPass); err != nil {
