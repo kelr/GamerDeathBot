@@ -150,7 +150,6 @@ func main() {
 		}
 		channel, username, message := splitMessage(msg)
 		if username != "tmi" && username != botNick {
-			//fmt.Println(time.Now().Format(time.StampMilli), ":", channel, "-", username, "-", message)
 			// Log out the message to the db
 			go insertDB(db, time.Now(), channel, username, message)
 			parseMessage(db, irc, &channelTransmit, channel, username, message)

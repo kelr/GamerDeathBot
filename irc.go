@@ -5,6 +5,7 @@ import (
 	"net"
 	"strings"
 	"time"
+	"errors"
 )
 
 const (
@@ -38,7 +39,12 @@ func NewIRCConnection(host string, port string) *IrcConnection {
 }
 
 // Connect to the IRC server, authenticate and join target channels
-func (c *IrcConnection) Connect(nick string, pass string) error {
+// Login is the login username for the account and token is an 
+// OAuth2 token with Twitch IRC permissions, prefixed with oauth:
+func (c *IrcConnection) Connect(login string, token string) error {
+	if login == "" || token == "" {
+		return errors.New("IRC cannot connect, missing login or OAuth token")
+	}
 	if !c.isConnected {
 		conn, err := net.Dial("tcp", c.host+":"+c.port)
 		if err != nil {
@@ -47,7 +53,7 @@ func (c *IrcConnection) Connect(nick string, pass string) error {
 		}
 		c.conn = conn
 		go c.rateLimiter()
-		c.authenticate(nick, pass)
+		c.authenticate(login, token)
 		c.isConnected = true
 	}
 	return nil
