@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"github.com/kelr/gundyr/helix"
 	_ "github.com/lib/pq"
+	"log"
 	"math/rand"
 	"os"
 	"regexp"
@@ -41,10 +41,10 @@ func splitMessage(msg string) (string, string, string) {
 }
 
 func joinChannel(db *DBConnection, irc *IrcConnection, manager *ChannelManager, username string) {
-	fmt.Println("JOIN -> " + username)
+	log.Println("JOIN -> " + username)
 	botChannel, err := manager.GetChannel(botNick)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -57,7 +57,7 @@ func joinChannel(db *DBConnection, irc *IrcConnection, manager *ChannelManager, 
 	// Add a new DB entry, join the IRC channel, add the channel to the status map
 	id := getChannelID(apiClient, username)
 	if id == "" {
-		fmt.Println("ERROR: API Can't get ID for: " + username)
+		log.Println("ERROR: API Can't get ID for: " + username)
 		return
 	}
 
@@ -69,10 +69,10 @@ func joinChannel(db *DBConnection, irc *IrcConnection, manager *ChannelManager, 
 }
 
 func leaveChannel(db *DBConnection, irc *IrcConnection, manager *ChannelManager, username string) {
-	fmt.Println("LEAVE -> " + username)
+	log.Println("LEAVE -> " + username)
 	botChannel, err := manager.GetChannel(botNick)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -103,7 +103,7 @@ func parseMessage(db *DBConnection, irc *IrcConnection, manager *ChannelManager,
 	} else {
 		chatChan, err := manager.GetChannel(channel[1:])
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			return
 		}
 		if reGreeting.FindString(message) != "" {
@@ -127,7 +127,7 @@ func initHelixAPI() *helix.Client {
 	}
 	api, err := helix.NewClient(config)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		os.Exit(1)
 	}
 	return api
@@ -138,14 +138,14 @@ func main() {
 
 	db := NewDBConnection("postgres", dbInfo)
 	if err := db.Open(); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		os.Exit(1)
 	}
 	defer db.Close()
 
 	irc := NewIRCConnection(ircHostURL, ircHostPort)
 	if err := irc.Connect(botNick, botPass); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		os.Exit(1)
 	}
 	defer irc.Disconnect()
@@ -163,8 +163,8 @@ func main() {
 	for {
 		msg, err := irc.Recv()
 		if err != nil {
-			fmt.Println(err)
-			fmt.Println("Attempting to reconnect...")
+			log.Println(err)
+			log.Println("Attempting to reconnect...")
 			irc.Connect(botNick, botPass)
 		}
 		channel, username, message := splitMessage(msg)

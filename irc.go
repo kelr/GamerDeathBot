@@ -145,6 +145,5 @@ func (c *IrcConnection) send(message string) error {
 		c.Disconnect()
 		return err
 	}
-	fmt.Println("TX: " + message)
 	return nil
 }
