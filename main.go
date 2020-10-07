@@ -17,6 +17,8 @@ const (
 	regexMessage  = `^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :`
 	regexGreeting = `(?i)(hi|hiya|hello|hey|yo|sup|howdy|hovvdy|greetings|what's good|whats good|vvhat's good|vvhats good|what's up|whats up|vvhat's up|vvhats up|konichiwa|hewwo|etalWave|vvhats crackalackin|whats crackalackin|henlo|good morning|good evening|good afternoon) (@*GamerDeathBot|gdb)`
 	regexFarewell = `(?i)(bye|goodnight|good night|goodbye|good bye|see you|see ya|so long|farewell|later|seeya|ciao|au revoir|bon voyage|peace|in a while crocodile|see you later alligator|later alligator|have a good one|igottago|l8r|later skater|catch you on the flip side|bye-bye|sayonara) (@*GamerDeathBot|gdb)`
+	ircHostURL    = "irc.twitch.tv"
+	ircHostPort   = "6667"
 )
 
 var (
@@ -31,7 +33,7 @@ var (
 	reMessage  = regexp.MustCompile(regexMessage)
 	reGreeting = regexp.MustCompile(regexGreeting)
 	reFarewell = regexp.MustCompile(regexFarewell)
-	apiClient *helix.Client
+	apiClient  *helix.Client
 )
 
 // Parses out channel, username, and message strings from chat message
@@ -119,14 +121,18 @@ func main() {
 	}
 	defer db.Close()
 
-	connList, idList := getRegisteredChannels(db)
-
-	irc := NewIRCConnection(connList)
+	irc := NewIRCConnection(ircHostURL, ircHostPort)
 	if irc.Connect(botNick, botPass) != nil {
 		fmt.Println(err)
 		return
 	}
 	defer irc.Disconnect()
+
+	// Look up which channels we're supposed to connect to
+	connList, idList := getRegisteredChannels(db)
+	for _, channel := range connList {
+		irc.Join(channel)
+	}
 
 	// Register channels into the transmission map and start their timers
 	channelTransmit := make(map[string]*ChatChannel)
@@ -150,4 +156,5 @@ func main() {
 			parseMessage(db, irc, &channelTransmit, channel, username, message)
 		}
 	}
+
 }
