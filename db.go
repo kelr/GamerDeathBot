@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	logInsert     = "insert into logs (time, channel, username, message) values ($1, $2, $3, $4)"
-	insertChannel = "insert into channels (name, id) values ($1, $2)"
-	getChannels   = "select * from channels"
+	logInsert         = "insert into logs (time, channel, username, message) values ($1, $2, $3, $4)"
+	insertChannel     = "insert into channels (name, id) values ($1, $2)"
+	getChannels       = "select * from channels"
 	deleteChannelUser = "DELETE FROM channels WHERE channels.name = $1"
-	deleteChannelID = "DELETE FROM channels WHERE channels.id = $1"
+	deleteChannelID   = "DELETE FROM channels WHERE channels.id = $1"
 )
 
 // DB is an interface to the underlying database connection object
@@ -36,7 +36,7 @@ type Database interface {
 type DBConnection struct {
 	conn   DB
 	driver string
-	info string
+	info   string
 }
 
 // NewDBConnection returns a DBConnection object
@@ -141,7 +141,6 @@ func (db *DBConnection) GetRegisteredChannels() ([]string, []string) {
 		}
 		channels = append(channels, name)
 		ids = append(ids, id)
-		fmt.Println(name, id)
 	}
 
 	return channels, ids

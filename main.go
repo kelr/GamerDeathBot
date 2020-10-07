@@ -40,35 +40,44 @@ func splitMessage(msg string) (string, string, string) {
 	return reChannel.FindString(msg), reUser.FindString(msg), reMessage.ReplaceAllLiteralString(msg, "")
 }
 
-func joinChannel(db *DBConnection, irc *IrcConnection, channelTransmit *map[string]*ChatChannel, username string) {
+func joinChannel(db *DBConnection, irc *IrcConnection, manager *ChannelManager, username string) {
 	fmt.Println("JOIN -> " + username)
-	botChannel := (*channelTransmit)[botNick]
+	botChannel, err := manager.GetChannel(botNick)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	// Check if they have already registered
-	if _, ok := (*channelTransmit)[username]; ok {
+	if manager.IsRegistered(username) {
 		botChannel.SendRegisterError(username)
+		return
 	}
 
 	// Add a new DB entry, join the IRC channel, add the channel to the status map
 	id := getChannelID(apiClient, username)
 	if id == "" {
 		fmt.Println("ERROR: API Can't get ID for: " + username)
+		return
 	}
 
 	go db.AddChannel(username, id)
 	irc.Join(username)
-	(*channelTransmit)[username] = NewChatChannel(username, id, irc)
-	go (*channelTransmit)[username].StartGetupTimer()
+	manager.RegisterChannel(username, id, irc)
 
 	botChannel.SendRegistered(username)
 }
 
-func leaveChannel(db *DBConnection, irc *IrcConnection, channelTransmit *map[string]*ChatChannel, username string) {
+func leaveChannel(db *DBConnection, irc *IrcConnection, manager *ChannelManager, username string) {
 	fmt.Println("LEAVE -> " + username)
-	botChannel := (*channelTransmit)[botNick]
+	botChannel, err := manager.GetChannel(botNick)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	// Check if they have already unregistered
-	if _, ok := (*channelTransmit)[username]; !ok {
+	if !manager.IsRegistered(username) {
 		botChannel.SendUnRegisterError(username)
 		return
 	}
@@ -76,24 +85,34 @@ func leaveChannel(db *DBConnection, irc *IrcConnection, channelTransmit *map[str
 	// Remove the DB entry, leave the IRC channel, delete the channel from the status map
 	go db.DeleteChannelUser(username)
 	irc.Part(username)
-	(*channelTransmit)[username].StopGetupTimer()
-	delete((*channelTransmit), username)
+	manager.UnregisterChannel(username)
 
 	botChannel.SendUnregistered(username)
 }
 
 // Determines the command from the chat message, if any, and executes it
-func parseMessage(db *DBConnection, irc *IrcConnection, channelTransmit *map[string]*ChatChannel, channel string, username string, message string) {
-	if message == "!join" && channel == "#"+botNick {
-		joinChannel(db, irc, channelTransmit, username)
-	} else if message == "!leave" && channel == "#"+botNick {
-		leaveChannel(db, irc, channelTransmit, username)
-	} else if reGreeting.FindString(message) != "" {
-		(*channelTransmit)[channel[1:]].SendGreeting(username)
-	} else if reFarewell.FindString(message) != "" {
-		(*channelTransmit)[channel[1:]].SendFarewell(username)
-	} else if message == "!gamerdeath" {
-		(*channelTransmit)[channel[1:]].SendGamerdeath()
+func parseMessage(db *DBConnection, irc *IrcConnection, manager *ChannelManager, channel string, username string, message string) {
+
+	if channel == "#"+botNick {
+		// Handle home channel commands
+		if message == "!join" {
+			joinChannel(db, irc, manager, username)
+		} else if message == "!leave" {
+			leaveChannel(db, irc, manager, username)
+		}
+	} else {
+		chatChan, err := manager.GetChannel(channel[1:])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		if reGreeting.FindString(message) != "" {
+			chatChan.SendGreeting(username)
+		} else if reFarewell.FindString(message) != "" {
+			chatChan.SendFarewell(username)
+		} else if message == "!gamerdeath" {
+			chatChan.SendGamerdeath()
+		}
 	}
 }
 
@@ -115,7 +134,6 @@ func initHelixAPI() *helix.Client {
 }
 
 func main() {
-
 	apiClient = initHelixAPI()
 
 	db := NewDBConnection("postgres", dbInfo)
@@ -138,12 +156,8 @@ func main() {
 		irc.Join(channel)
 	}
 
-	// Register channels into the transmission map and start their timers
-	channelTransmit := make(map[string]*ChatChannel)
-	for index, channel := range connList {
-		channelTransmit[channel] = NewChatChannel(channel, idList[index], irc)
-		go channelTransmit[channel].StartGetupTimer()
-	}
+	manager := NewChannelManager(connList, idList, irc)
+	manager.StartAllTimers()
 
 	// Main thread rxs on connection, logs to db and responds
 	for {
@@ -157,7 +171,7 @@ func main() {
 		if username != "tmi" && username != botNick {
 			// Log out the message to the db
 			go db.InsertLog(time.Now(), channel, username, message)
-			parseMessage(db, irc, &channelTransmit, channel, username, message)
+			parseMessage(db, irc, manager, channel, username, message)
 		}
 	}
 
