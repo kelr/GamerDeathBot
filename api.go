@@ -13,11 +13,12 @@ type API interface {
 	GetChannelID(username string) (string, error)
 }
 
+// APIClient wraps a Twitch Helix API Client
 type APIClient struct {
 	api *helix.Client
 }
 
-// NewChannelManager returns a new Channel Manager
+// NewAPIClient returns a new API Client
 func NewAPIClient(id string, secret string) (*APIClient, error) {
 	config := &helix.Config{
 		ClientID:     id,
@@ -32,7 +33,7 @@ func NewAPIClient(id string, secret string) (*APIClient, error) {
 	}, nil
 }
 
-// Returns channel uptime in an integer number of seconds or -1 if not live
+// GetChannelUptime returns channel uptime in an integer number of seconds or -1 if not live
 func (a *APIClient) GetChannelUptime(username string) (int, error) {
 	opt := &helix.GetStreamsOpt{
 		UserLogin: username,
@@ -51,6 +52,7 @@ func (a *APIClient) GetChannelUptime(username string) (int, error) {
 	return -1, nil
 }
 
+// GetChannelID returns the ID of a Twitch User
 func (a *APIClient) GetChannelID(username string) (string, error) {
 	opt := &helix.GetUsersOpt{
 		Login: []string{username},

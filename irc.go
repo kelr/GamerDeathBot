@@ -49,6 +49,7 @@ type IRCMessage struct {
 	Timestamp   time.Time
 }
 
+// IRCTags represents a string:string map of IRC Tags
 type IRCTags map[string]string
 
 // IrcConnection represents a connection state to an IRC server over a TCP socket
