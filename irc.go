@@ -53,32 +53,34 @@ type IRCTags map[string]string
 
 // IrcConnection represents a connection state to an IRC server over a TCP socket
 type IrcConnection struct {
-	host        string
-	port        string
-	login       string
-	token       string
-	conn        net.Conn
-	isConnected bool
-	txQueue     chan string
-	control     chan bool
-	reader      *bufio.Reader
+	host           string
+	port           string
+	login          string
+	token          string
+	conn           net.Conn
+	isConnected    bool
+	txQueue        chan string
+	control        chan bool
+	reader         *bufio.Reader
+	connectionList map[string]bool
 }
 
-// NewIRCConnection returns a new IRC Client
+// NewIRCConnection returns a new IRC Client.
 func NewIRCConnection(host string, port string) *IrcConnection {
 	return &IrcConnection{
-		host:        host,
-		port:        port,
-		login:       "",
-		token:       "",
-		conn:        nil,
-		isConnected: false,
-		txQueue:     make(chan string, txQueueSize),
-		control:     make(chan bool),
+		host:           host,
+		port:           port,
+		login:          "",
+		token:          "",
+		conn:           nil,
+		isConnected:    false,
+		txQueue:        make(chan string, txQueueSize),
+		control:        make(chan bool),
+		connectionList: make(map[string]bool),
 	}
 }
 
-// Connect to the IRC server, authenticate and join target channels
+// Connect to the IRC server and
 // Login is the login username for the account and token is an
 // OAuth2 token with Twitch IRC permissions, prefixed with oauth:
 func (c *IrcConnection) Connect(login string, token string) error {
@@ -93,14 +95,23 @@ func (c *IrcConnection) Connect(login string, token string) error {
 		}
 		c.conn = conn
 		c.reader = bufio.NewReader(c.conn)
-		go c.rateLimiter()
-		c.send("PASS " + token)
-		c.send("NICK " + login)
 
-		// Initial read to parse welcome message and confirm authentication
-		if _, err = c.Read(); err != nil {
+		go c.rateLimiter()
+		if err = c.authenticate(login, token); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// Attempt to authenticate with the IRC server, and read the response
+func (c *IrcConnection) authenticate(login string, token string) error {
+	c.send("PASS " + token)
+	c.send("NICK " + login)
+
+	// Initial read to parse welcome message and confirm authentication
+	if _, err := c.Read(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -142,12 +153,20 @@ func (c *IrcConnection) rateLimiter() {
 }
 
 // Join sends a JOIN command to the IRC server to join a channel
+// Adds the channel to the connection list if it is not already there.
 func (c *IrcConnection) Join(channel string) {
+	if _, ok := c.connectionList[channel]; !ok {
+		c.connectionList[channel] = true
+	}
 	c.send("JOIN #" + channel)
 }
 
 // Part sends a PART command to the IRC server to leave a channel
+// Removes the channel from the connection list if it is there.
 func (c *IrcConnection) Part(channel string) {
+	if _, ok := c.connectionList[channel]; ok {
+		delete(c.connectionList, channel)
+	}
 	c.send("PART #" + channel)
 }
 
@@ -194,6 +213,11 @@ func (c *IrcConnection) handlePing() {
 func (c *IrcConnection) handle001() {
 	c.enableCaps()
 	c.isConnected = true
+	// Join channels in the connection list. This handles re-joining channels
+	// if we had to re-establish communication with the IRC server.
+	for channel := range c.connectionList {
+		c.Join(channel)
+	}
 }
 
 func (c *IrcConnection) respondDefaultCmds(msg *IRCMessage) {

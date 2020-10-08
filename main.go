@@ -68,6 +68,7 @@ func main() {
 			fmt.Println(err)
 			if !irc.IsConnected() {
 				fmt.Println("Attempting to reconnect...")
+				time.Sleep(5 * time.Second)
 				irc.Connect(botNick, botPass)
 			}
 			continue
