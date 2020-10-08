@@ -35,10 +35,6 @@ func NewDispatcher(db Database, manager *ChannelManager, api API) *Dispatcher {
 // Dispatch determines what command to run based on the input IRC Message
 func (p *Dispatcher) Dispatch(msg *IRCMessage) {
 	// Don't reply to self
-	if msg.Command != "PRIVMSG" && msg.Command != "CLEARCHAT" {
-		fmt.Println(msg.Tags, msg.Command, msg.Channel, msg.Username, msg.Message)
-	}
-	return
 	if msg.Command == "PRIVMSG" && msg.Username != botNick {
 		// Log out the message to the db
 		p.db.InsertLog(time.Now(), msg.Channel, msg.Username, msg.Message)
@@ -48,7 +44,6 @@ func (p *Dispatcher) Dispatch(msg *IRCMessage) {
 			p.parseChannelCmd(msg)
 		}
 	}
-	fmt.Println(msg.Command, msg.Channel, msg.Username, msg.Message)
 }
 
 // Handle home channel commands
