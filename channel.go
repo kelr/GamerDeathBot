@@ -77,10 +77,11 @@ type ChatChannel struct {
 	isGamerdeathReady bool
 	isRegisterReady   bool
 	timerStop         chan bool
+	api               API
 }
 
 // Returns a new IRC Client
-func NewChatChannel(username string, connection IRC) *ChatChannel {
+func NewChatChannel(username string, connection IRC, api API) *ChatChannel {
 	return &ChatChannel{
 		channelName:       username,
 		irc:               connection,
@@ -89,6 +90,7 @@ func NewChatChannel(username string, connection IRC) *ChatChannel {
 		isGamerdeathReady: true,
 		isRegisterReady:   true,
 		timerStop:         make(chan bool, 1),
+		api:               api,
 	}
 }
 
@@ -156,7 +158,7 @@ func (c *ChatChannel) StartGetupTimer() {
 			fmt.Println("[GETUP]: Stopping getup timer thread for: ", c.channelName)
 			return
 		default:
-			uptime, err := getChannelUptime(apiClient, c.channelName)
+			uptime, err := c.api.GetChannelUptime(c.channelName)
 			if err != nil {
 				time.Sleep(time.Duration(60) * time.Second)
 				continue
@@ -168,7 +170,7 @@ func (c *ChatChannel) StartGetupTimer() {
 				// Timer ticks at the next 3 hour mark determined by uptime
 				timer := time.NewTimer(time.Duration(waitTime) * time.Second)
 				<-timer.C
-				uptime, _ = getChannelUptime(apiClient, c.channelName)
+				uptime, _ = c.api.GetChannelUptime(c.channelName)
 				if c.irc.IsConnected() && uptime != -1 {
 					select {
 					case <-c.timerStop:

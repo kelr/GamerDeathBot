@@ -2,17 +2,43 @@ package main
 
 import (
 	"fmt"
-	"github.com/kelr/gundyr/helix"
 	"time"
+
+	"github.com/kelr/gundyr/helix"
 )
 
+// API is an interface to the underlying Helix API connection
+type API interface {
+	GetChannelUptime(username string) (int, error)
+	GetChannelID(username string) (string, error)
+}
+
+type APIClient struct {
+	api *helix.Client
+}
+
+// NewChannelManager returns a new Channel Manager
+func NewAPIClient(id string, secret string) (*APIClient, error) {
+	config := &helix.Config{
+		ClientID:     id,
+		ClientSecret: secret,
+	}
+	api, err := helix.NewClient(config)
+	if err != nil {
+		return nil, err
+	}
+	return &APIClient{
+		api: api,
+	}, nil
+}
+
 // Returns channel uptime in an integer number of seconds or -1 if not live
-func getChannelUptime(client *helix.Client, username string) (int, error) {
+func (a *APIClient) GetChannelUptime(username string) (int, error) {
 	opt := &helix.GetStreamsOpt{
 		UserLogin: username,
 	}
 
-	response, err := client.GetStreams(opt)
+	response, err := a.api.GetStreams(opt)
 	if err != nil {
 		fmt.Println("Error in API call:", err)
 		return -1, err
@@ -25,19 +51,19 @@ func getChannelUptime(client *helix.Client, username string) (int, error) {
 	return -1, nil
 }
 
-func getChannelID(client *helix.Client, username string) string {
+func (a *APIClient) GetChannelID(username string) (string, error) {
 	opt := &helix.GetUsersOpt{
 		Login: []string{username},
 	}
 
-	response, err := client.GetUsers(opt)
+	response, err := a.api.GetUsers(opt)
 	if err != nil {
 		fmt.Println("Error in API call:", err)
-		return ""
+		return "", err
 	}
 
 	if len(response.Data) > 0 {
-		return response.Data[0].ID
+		return response.Data[0].ID, nil
 	}
-	return ""
+	return "", err
 }

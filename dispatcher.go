@@ -20,13 +20,15 @@ var (
 type Dispatcher struct {
 	db      Database
 	manager *ChannelManager
+	api     API
 }
 
 // NewDispatcher returns a new Dispatcher
-func NewDispatcher(db Database, manager *ChannelManager) *Dispatcher {
+func NewDispatcher(db Database, manager *ChannelManager, api API) *Dispatcher {
 	return &Dispatcher{
 		db:      db,
 		manager: manager,
+		api:     api,
 	}
 }
 
@@ -89,8 +91,8 @@ func (p *Dispatcher) joinChannel(username string) {
 		return
 	}
 
-	id := getChannelID(apiClient, username)
-	if id == "" {
+	id, err := p.api.GetChannelID(username)
+	if err != nil {
 		fmt.Println("ERROR: API Can't get ID for: " + username)
 		return
 	}

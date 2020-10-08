@@ -14,7 +14,7 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 
-RUN go build -o gamerdeathbot api.go channel.go irc.go db.go manager.go main.go
+RUN go build -o gamerdeathbot api.go channel.go irc.go db.go manager.go dispatcher.go main.go
 
 WORKDIR /dist
 

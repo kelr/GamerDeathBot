@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"time"
-
-	"github.com/kelr/gundyr/helix"
 )
 
 const (
@@ -20,59 +18,50 @@ var (
 	clientID     = os.Getenv("GDB_CLIENT_ID")
 	clientSecret = os.Getenv("GDB_SECRET")
 	dbInfo       = os.Getenv("GDB_DB_INFO")
-	apiClient    *helix.Client
 )
 
 func init() {
 	rand.Seed(time.Now().Unix())
 }
 
-func initHelixAPI() *helix.Client {
-	config := &helix.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
+func run(irc *IrcConnection, dispatch *Dispatcher) {
+	for {
+		msg, err := irc.Read()
+		if err != nil {
+			log.Fatalln(err)
+			if !irc.IsConnected() {
+				log.Println("Attempting to reconnect...")
+				irc.Connect(botNick, botPass)
+			}
+			continue
+		}
+		dispatch.Dispatch(msg)
 	}
-	api, err := helix.NewClient(config)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	return api
 }
 
 func main() {
-	apiClient = initHelixAPI()
+	api, err := NewAPIClient(clientID, clientSecret)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	db := NewDBConnection("postgres", dbInfo)
 	if err := db.Open(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalln(err)
 	}
 	defer db.Close()
 
 	irc := NewIRCConnection(ircHostURL, ircHostPort)
 	if err := irc.Connect(botNick, botPass); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalln(err)
 	}
 	defer irc.Disconnect()
 
 	// Look up which channels we're supposed to connect to
 	connList, _ := db.GetRegisteredChannels()
-	manager := NewChannelManager(connList, irc)
-	dispatcher := NewDispatcher(db, manager)
 
-	for {
-		msg, err := irc.Read()
-		if err != nil {
-			fmt.Println(err)
-			if !irc.IsConnected() {
-				fmt.Println("Attempting to reconnect...")
-				time.Sleep(5 * time.Second)
-				irc.Connect(botNick, botPass)
-			}
-			continue
-		}
-		dispatcher.Dispatch(msg)
-	}
+	manager := NewChannelManager(connList, irc, api)
+	dispatch := NewDispatcher(db, manager, api)
+
+	run(irc, dispatch)
 }

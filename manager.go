@@ -8,13 +8,15 @@ import (
 type ChannelManager struct {
 	channels map[string]*ChatChannel
 	irc      IRC
+	api      API
 }
 
 // NewChannelManager returns a new Channel Manager
-func NewChannelManager(userList []string, irc IRC) *ChannelManager {
+func NewChannelManager(userList []string, irc IRC, api API) *ChannelManager {
 	c := &ChannelManager{
 		channels: make(map[string]*ChatChannel),
 		irc:      irc,
+		api:      api,
 	}
 	for _, channel := range userList {
 		c.RegisterChannel(channel)
@@ -25,7 +27,7 @@ func NewChannelManager(userList []string, irc IRC) *ChannelManager {
 // RegisterChannel registers a new channel if it is not already registered.
 func (c *ChannelManager) RegisterChannel(channel string) {
 	if !c.IsRegistered(channel) {
-		c.channels[channel] = NewChatChannel(channel, c.irc)
+		c.channels[channel] = NewChatChannel(channel, c.irc, c.api)
 		c.channels[channel].JoinChannel()
 		go c.channels[channel].StartGetupTimer()
 	}
