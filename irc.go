@@ -1,19 +1,30 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 )
 
 const (
-	rxBufSize   = 4096
-	txQueueSize = 100
-	pingMessage = "PING :tmi.twitch.tv"
-	pongMessage = "PONG :tmi.twitch.tv"
-	rateLimit   = 2 * time.Second
+	rxBufSize     = 4096
+	txQueueSize   = 100
+	pingMessage   = "PING :tmi.twitch.tv"
+	pongMessage   = "PONG :tmi.twitch.tv"
+	rateLimit     = 2 * time.Second
+	regexUsername = `\w+`
+	regexChannel  = `#\w+`
+	regexMessage  = `^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :`
+)
+
+var (
+	reUser    = regexp.MustCompile(regexUsername)
+	reChannel = regexp.MustCompile(regexChannel)
+	reMessage = regexp.MustCompile(regexMessage)
 )
 
 // IRC is an interface for the underlying IRC connection
@@ -23,18 +34,34 @@ type IRC interface {
 	Join(channel string)
 	Part(channel string)
 	Chat(channel string, message string)
-	Read() (string, error)
+	Read() (*IRCMessage, error)
 	IsConnected() bool
 }
+
+// IRCMessage represents parsed out fields of a message from IRC
+type IRCMessage struct {
+	Channel     string
+	Username    string
+	Message     string
+	Command     string
+	CommandArgs []string
+	Tags        IRCTags
+	Timestamp   time.Time
+}
+
+type IRCTags map[string]string
 
 // IrcConnection represents a connection state to an IRC server over a TCP socket
 type IrcConnection struct {
 	host        string
 	port        string
+	login       string
+	token       string
 	conn        net.Conn
 	isConnected bool
 	txQueue     chan string
 	control     chan bool
+	reader      *bufio.Reader
 }
 
 // NewIRCConnection returns a new IRC Client
@@ -42,6 +69,8 @@ func NewIRCConnection(host string, port string) *IrcConnection {
 	return &IrcConnection{
 		host:        host,
 		port:        port,
+		login:       "",
+		token:       "",
 		conn:        nil,
 		isConnected: false,
 		txQueue:     make(chan string, txQueueSize),
@@ -54,7 +83,7 @@ func NewIRCConnection(host string, port string) *IrcConnection {
 // OAuth2 token with Twitch IRC permissions, prefixed with oauth:
 func (c *IrcConnection) Connect(login string, token string) error {
 	if login == "" || token == "" {
-		return errors.New("IRC cannot connect, missing login or OAuth token")
+		return errors.New("[IRC]: cannot connect, missing login or OAuth token")
 	}
 	if !c.isConnected {
 		conn, err := net.Dial("tcp", c.host+":"+c.port)
@@ -63,9 +92,15 @@ func (c *IrcConnection) Connect(login string, token string) error {
 			return err
 		}
 		c.conn = conn
+		c.reader = bufio.NewReader(c.conn)
 		go c.rateLimiter()
-		c.authenticate(login, token)
-		c.isConnected = true
+		c.send("PASS " + token)
+		c.send("NICK " + login)
+
+		// Initial read to parse welcome message and confirm authentication
+		if _, err = c.Read(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -75,9 +110,8 @@ func (c *IrcConnection) IsConnected() bool {
 	return c.isConnected
 }
 
-func (c *IrcConnection) authenticate(nick string, pass string) {
-	c.send("PASS " + pass)
-	c.send("NICK " + nick)
+func (c *IrcConnection) enableCaps() {
+	c.send("CAP REQ :twitch.tv/tags twitch.tv/commands")
 }
 
 // Disconnect from the IRC server
@@ -92,6 +126,19 @@ func (c *IrcConnection) Disconnect() error {
 		c.isConnected = false
 	}
 	return nil
+}
+
+// Rate limit the transmission of messages to the IRC server
+func (c *IrcConnection) rateLimiter() {
+	for {
+		select {
+		case <-c.control:
+			return
+		case msg := <-c.txQueue:
+			c.send(msg)
+		}
+		time.Sleep(rateLimit)
+	}
 }
 
 // Join sends a JOIN command to the IRC server to join a channel
@@ -109,48 +156,23 @@ func (c *IrcConnection) Chat(channel string, message string) {
 	c.txQueue <- "PRIVMSG #" + channel + " :" + message
 }
 
-// Rate limit the transmission of messages to the IRC server
-func (c *IrcConnection) rateLimiter() {
-	for {
-		select {
-		case <-c.control:
-			return
-		case msg := <-c.txQueue:
-			c.send(msg)
-		}
-		time.Sleep(rateLimit)
-	}
-}
-
 // Read receieve data from the IRC connection. Handles ping pong automatically.
-func (c *IrcConnection) Read() (string, error) {
-	buf := make([]byte, rxBufSize)
-	len, err := c.conn.Read(buf)
+func (c *IrcConnection) Read() (*IRCMessage, error) {
+	message, err := c.reader.ReadString('\n')
 	if err != nil {
 		c.Disconnect()
-		return "", err
+		return nil, err
 	}
-	// Cast to string, trim newlines
-	message := strings.TrimSpace(string(buf[:len]))
-	message, err = c.handlePingPong(message)
+
+	// Parse out the message
+	parsedMsg, err := parseIRCMessage(message)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return message, nil
-}
+	c.respondDefaultCmds(parsedMsg)
 
-// Handle ping pong, return the next read instead
-func (c *IrcConnection) handlePingPong(message string) (string, error) {
-	if message == pingMessage {
-		c.send(pongMessage)
-		message, err := c.Read()
-		if err != nil {
-			return "", err
-		}
-		return message, nil
-	}
-	return message, nil
+	return parsedMsg, nil
 }
 
 // Raw send to the socket
@@ -162,4 +184,140 @@ func (c *IrcConnection) send(message string) error {
 		return err
 	}
 	return nil
+}
+
+// Handle ping pong, return the next read instead
+func (c *IrcConnection) handlePing() {
+	c.send(pongMessage)
+}
+
+func (c *IrcConnection) handle001() {
+	c.enableCaps()
+	c.isConnected = true
+}
+
+func (c *IrcConnection) respondDefaultCmds(msg *IRCMessage) {
+	if msg.Command == "001" {
+		c.handle001()
+	} else if msg.Command == "PING" {
+		c.handlePing()
+	}
+}
+
+// Parse parses out commands from a chat message into an IRCMessage object
+func parseIRCMessage(msg string) (*IRCMessage, error) {
+	message := strings.TrimRight(msg, "\r\n")
+	if len(message) == 0 {
+		return nil, errors.New("IRC Error: Cannot parse empty message")
+	}
+
+	ircMessage := &IRCMessage{
+		Tags:      IRCTags{},
+		Timestamp: time.Now().UTC(),
+	}
+
+	// Parse out tags if they exist
+	if strings.HasPrefix(message, "@") {
+		tagEnd := strings.Index(message, " ")
+		if tagEnd == -1 {
+			return nil, errors.New("IRC Error: Missing IRC tag data: " + message)
+		}
+
+		ircMessage.Tags = parseTags(message[:tagEnd])
+		message = message[tagEnd+1:]
+
+	}
+
+	// Parse out the message header
+	if strings.HasPrefix(message, ":") {
+		headerEnd := strings.Index(message, " ")
+		if headerEnd == -1 {
+			return nil, errors.New("IRC Error: Missing IRC header data: " + message)
+		}
+
+		ircMessage.Username = parseUsername(message[:headerEnd])
+		message = message[headerEnd+1:]
+	}
+
+	// Parse out the rest of the message
+	split := strings.SplitN(message, " :", 2)
+	if len(split) == 0 {
+		return nil, errors.New("IRC Error: Unable to parse IRC message payload: " + message)
+	}
+	if len(split) == 2 {
+		ircMessage.Message = split[1]
+	}
+
+	// Parse out the command and any args
+	commands := strings.Split(split[0], " ")
+	if len(commands) == 0 {
+		return nil, errors.New("IRC Error: Missing IRC Command: " + message)
+	}
+	ircMessage.Command = commands[0]
+	ircMessage.Channel = parseChannel(commands)
+	ircMessage.CommandArgs = commands[1:]
+
+	return ircMessage, nil
+}
+
+// Parse out the channel if it exists
+func parseChannel(commands []string) string {
+	for i := 0; i < len(commands); i++ {
+		if strings.HasPrefix(commands[i], "#") {
+			return commands[i]
+		}
+	}
+	return ""
+}
+
+// Split tags by semicolon and add them into a map[string]string
+func parseTags(msg string) IRCTags {
+	ret := IRCTags{}
+	if !strings.HasPrefix(msg, "@") {
+		return ret
+	}
+	// Strip off the prefix
+	msg = msg[1:]
+
+	tags := strings.Split(msg, ";")
+	for _, tag := range tags {
+		parts := strings.SplitN(tag, "=", 2)
+		if len(parts) < 2 {
+			ret[parts[0]] = ""
+		} else {
+			ret[parts[0]] = parts[1]
+		}
+	}
+	return ret
+}
+
+func parseUsername(msg string) string {
+	if !strings.HasPrefix(msg, ":") {
+		return ""
+	}
+	// Strip off the prefix
+	msg = msg[1:]
+
+	usernameEnd := strings.Index(msg, "!")
+	if usernameEnd != -1 {
+		return msg[:usernameEnd]
+	}
+
+	usernameEnd = strings.Index(msg, "@")
+	if usernameEnd != -1 {
+		return msg[:usernameEnd]
+	}
+
+	return msg
+}
+
+func prettyPrintIRC(msg IRCMessage) {
+	fmt.Println("Timestamp:", msg.Timestamp)
+	fmt.Println("Channel:", msg.Channel)
+	fmt.Println("Command:", msg.Command)
+	fmt.Println("CommandArgs:", msg.CommandArgs)
+	fmt.Println("Username:", msg.Username)
+	fmt.Println("Message:", msg.Message)
+	fmt.Println("Tags:", msg.Tags)
+	fmt.Println()
 }

@@ -58,18 +58,20 @@ func main() {
 	defer irc.Disconnect()
 
 	// Look up which channels we're supposed to connect to
-	connList, idList := db.GetRegisteredChannels()
-	manager := NewChannelManager(connList, idList, irc)
-	parser := NewParser(db, manager)
+	connList, _ := db.GetRegisteredChannels()
+	manager := NewChannelManager(connList, irc)
+	dispatcher := NewDispatcher(db, manager)
 
-	// Main thread rxs on connection, logs to db and responds
 	for {
 		msg, err := irc.Read()
 		if err != nil {
 			fmt.Println(err)
-			fmt.Println("Attempting to reconnect...")
-			irc.Connect(botNick, botPass)
+			if !irc.IsConnected() {
+				fmt.Println("Attempting to reconnect...")
+				irc.Connect(botNick, botPass)
+			}
+			continue
 		}
-		parser.Parse(msg)
+		dispatcher.Dispatch(msg)
 	}
 }

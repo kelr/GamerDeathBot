@@ -11,21 +11,21 @@ type ChannelManager struct {
 }
 
 // NewChannelManager returns a new Channel Manager
-func NewChannelManager(userList []string, idList []string, irc IRC) *ChannelManager {
+func NewChannelManager(userList []string, irc IRC) *ChannelManager {
 	c := &ChannelManager{
 		channels: make(map[string]*ChatChannel),
 		irc:      irc,
 	}
-	for index, channel := range userList {
-		c.RegisterChannel(channel, idList[index])
+	for _, channel := range userList {
+		c.RegisterChannel(channel)
 	}
 	return c
 }
 
 // RegisterChannel registers a new channel if it is not already registered.
-func (c *ChannelManager) RegisterChannel(channel string, id string) {
+func (c *ChannelManager) RegisterChannel(channel string) {
 	if !c.IsRegistered(channel) {
-		c.channels[channel] = NewChatChannel(channel, id, c.irc)
+		c.channels[channel] = NewChatChannel(channel, c.irc)
 		c.channels[channel].JoinChannel()
 		go c.channels[channel].StartGetupTimer()
 	}

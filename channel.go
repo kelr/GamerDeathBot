@@ -15,17 +15,6 @@ const (
 	offlineCheckRate   = 300
 )
 
-type ChatChannel struct {
-	channelName       string
-	id                string
-	irc               IRC
-	isGreetingReady   bool
-	isFarewellReady   bool
-	isGamerdeathReady bool
-	isRegisterReady   bool
-	timerStop         chan bool
-}
-
 var GreetingResponses = []string{
 	"Hi",
 	"Hello",
@@ -80,11 +69,20 @@ var SubGifters = []string{
 	"spoonlessalakazam",
 }
 
+type ChatChannel struct {
+	channelName       string
+	irc               IRC
+	isGreetingReady   bool
+	isFarewellReady   bool
+	isGamerdeathReady bool
+	isRegisterReady   bool
+	timerStop         chan bool
+}
+
 // Returns a new IRC Client
-func NewChatChannel(username string, channelId string, connection IRC) *ChatChannel {
+func NewChatChannel(username string, connection IRC) *ChatChannel {
 	return &ChatChannel{
 		channelName:       username,
-		id:                channelId,
 		irc:               connection,
 		isGreetingReady:   true,
 		isFarewellReady:   true,
@@ -152,11 +150,10 @@ func (c *ChatChannel) SendUnRegisterError(targetUser string) {
 }
 
 func (c *ChatChannel) StartGetupTimer() {
-	fmt.Println("Starting new getup timer thread for: ", c.channelName)
 	for {
 		select {
 		case <-c.timerStop:
-			fmt.Println("Stopping getup timer thread for: ", c.channelName)
+			fmt.Println("[GETUP]: Stopping getup timer thread for: ", c.channelName)
 			return
 		default:
 			uptime, err := getChannelUptime(apiClient, c.channelName)
@@ -167,7 +164,7 @@ func (c *ChatChannel) StartGetupTimer() {
 
 			if uptime != -1 {
 				waitTime := reminderPeriod - (uptime % reminderPeriod)
-				fmt.Println("Waiting on tick for:", c.channelName, "in:", waitTime, "seconds")
+				fmt.Println("[GETUP]: Waiting on tick for:", c.channelName, "in:", waitTime, "seconds")
 				// Timer ticks at the next 3 hour mark determined by uptime
 				timer := time.NewTimer(time.Duration(waitTime) * time.Second)
 				<-timer.C
@@ -175,10 +172,10 @@ func (c *ChatChannel) StartGetupTimer() {
 				if c.irc.IsConnected() && uptime != -1 {
 					select {
 					case <-c.timerStop:
-						fmt.Println("Stopping getup timer from inner for: ", c.channelName)
+						fmt.Println("[GETUP]: Stopping getup timer from inner for: ", c.channelName)
 						return
 					default:
-						fmt.Println("TIMER TICK: ", c.channelName)
+						fmt.Println("[GETUP]: TIMER TICK: ", c.channelName)
 						c.irc.Chat(c.channelName, "MrDestructoid "+c.channelName+" alert! It's been 3 hours and its time to prevent Gamer Death!")
 					}
 				}
