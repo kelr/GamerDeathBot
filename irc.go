@@ -206,6 +206,14 @@ func (c *IrcConnection) send(message string) error {
 	return nil
 }
 
+func (c *IrcConnection) respondDefaultCmds(msg *IRCMessage) {
+	if msg.Command == "001" {
+		c.handle001()
+	} else if msg.Command == "PING" {
+		c.handlePing()
+	}
+}
+
 // Handle ping pong, return the next read instead
 func (c *IrcConnection) handlePing() {
 	c.send(pongMessage)
@@ -218,14 +226,6 @@ func (c *IrcConnection) handle001() {
 	// if we had to re-establish communication with the IRC server.
 	for channel := range c.connectionList {
 		c.Join(channel)
-	}
-}
-
-func (c *IrcConnection) respondDefaultCmds(msg *IRCMessage) {
-	if msg.Command == "001" {
-		c.handle001()
-	} else if msg.Command == "PING" {
-		c.handlePing()
 	}
 }
 
@@ -245,39 +245,31 @@ func parseIRCMessage(msg string) (*IRCMessage, error) {
 	if strings.HasPrefix(message, "@") {
 		tagEnd := strings.Index(message, " ")
 		if tagEnd == -1 {
-			return nil, errors.New("IRC Error: Missing IRC tag data: " + message)
+			return nil, errors.New("IRC Error: Parsing failed, missing data after tag: " + message)
 		}
-
 		ircMessage.Tags = parseTags(message[:tagEnd])
 		message = message[tagEnd+1:]
-
 	}
 
 	// Parse out the message header
 	if strings.HasPrefix(message, ":") {
 		headerEnd := strings.Index(message, " ")
 		if headerEnd == -1 {
-			return nil, errors.New("IRC Error: Missing IRC header data: " + message)
+			return nil, errors.New("IRC Error: Parsing failed, missing data after header: " + message)
 		}
-
 		ircMessage.Username = parseUsername(message[:headerEnd])
 		message = message[headerEnd+1:]
 	}
 
 	// Parse out the rest of the message
 	split := strings.SplitN(message, " :", 2)
-	if len(split) == 0 {
-		return nil, errors.New("IRC Error: Unable to parse IRC message payload: " + message)
+	if split[0] == "" {
+		return nil, errors.New("IRC Error: Parsing failed, missing IRC Command: " + message)
 	}
-	if len(split) == 2 {
-		ircMessage.Message = split[1]
-	}
+	ircMessage.Message = split[1]
 
 	// Parse out the command and any args
 	commands := strings.Split(split[0], " ")
-	if len(commands) == 0 {
-		return nil, errors.New("IRC Error: Missing IRC Command: " + message)
-	}
 	ircMessage.Command = commands[0]
 	ircMessage.Channel = parseChannel(commands)
 	ircMessage.CommandArgs = commands[1:]
