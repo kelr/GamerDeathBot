@@ -26,7 +26,7 @@ type DB interface {
 type Database interface {
 	Open() error
 	Close() error
-	InsertLog(time time.Time, channel string, username string, message string)
+	InsertLog(msg *IRCMessage)
 	AddChannel(username string, id string)
 	DeleteChannelUser(username string)
 	DeleteChannelID(id string)
@@ -110,7 +110,11 @@ func (db *DBConnection) DeleteChannelID(id string) {
 }
 
 // InsertLog inserts a log
-func (db *DBConnection) InsertLog(time time.Time, channel string, username string, message string) {
+func (db *DBConnection) InsertLog(msg *IRCMessage) {
+	time := time.Now()
+	channel := msg.Channel
+	username := msg.Username
+	message := msg.Message
 	stmt, err := db.conn.Prepare(logInsert)
 	if err != nil {
 		fmt.Println(err)

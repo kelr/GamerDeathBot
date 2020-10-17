@@ -1,38 +1,38 @@
 package main
 
 import (
-	"testing"
 	"reflect"
+	"testing"
 )
 
 func TestParseIRCMessage(t *testing.T) {
 	t.Parallel()
 
 	// Happy Path
-	inputs := [] struct {
-		Input string
+	inputs := []struct {
+		Input    string
 		Expected IRCMessage
-	} {
+	}{
 		{
-			Input: ":peepo PRIVMSG #channel :normal message", 
-			Expected: IRCMessage {
-				Channel: "#channel",
-				Username: "peepo",
-				Message: "normal message",
-				Command: "PRIVMSG",
+			Input: ":peepo PRIVMSG #channel :normal message",
+			Expected: IRCMessage{
+				Channel:     "#channel",
+				Username:    "peepo",
+				Message:     "normal message",
+				Command:     "PRIVMSG",
 				CommandArgs: []string{"#channel"},
-				Tags: IRCTags{},
+				Tags:        IRCTags{},
 			},
 		},
 		{
-			Input: "@tag1=one;tag2=222;tag3= :peepo!peepo@peepo PRIVMSG #channel :normal message", 
-			Expected: IRCMessage {
-				Channel: "#channel",
-				Username: "peepo",
-				Message: "normal message",
-				Command: "PRIVMSG",
+			Input: "@tag1=one;tag2=222;tag3= :peepo!peepo@peepo PRIVMSG #channel :normal message",
+			Expected: IRCMessage{
+				Channel:     "#channel",
+				Username:    "peepo",
+				Message:     "normal message",
+				Command:     "PRIVMSG",
 				CommandArgs: []string{"#channel"},
-				Tags: IRCTags {
+				Tags: IRCTags{
 					"tag1": "one",
 					"tag2": "222",
 					"tag3": "",
@@ -40,14 +40,14 @@ func TestParseIRCMessage(t *testing.T) {
 			},
 		},
 		{
-			Input: ":peepo PING :pong", 
-			Expected: IRCMessage {
-				Channel: "",
-				Username: "peepo",
-				Message: "pong",
-				Command: "PING",
+			Input: ":peepo PING :pong",
+			Expected: IRCMessage{
+				Channel:     "",
+				Username:    "peepo",
+				Message:     "pong",
+				Command:     "PING",
 				CommandArgs: []string{},
-				Tags: IRCTags{},
+				Tags:        IRCTags{},
 			},
 		},
 	}
@@ -89,7 +89,7 @@ func TestParseIRCMessageErrors(t *testing.T) {
 	// Errors
 	inputs := []struct {
 		Input string
-	} {
+	}{
 		{""},
 		{"@tags"},
 		{":header"},

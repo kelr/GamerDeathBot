@@ -18,6 +18,8 @@ var (
 	clientID     = os.Getenv("GDB_CLIENT_ID")
 	clientSecret = os.Getenv("GDB_SECRET")
 	dbInfo       = os.Getenv("GDB_DB_INFO")
+	awsKeyID     = os.Getenv("AWS_ACCESS_KEY_ID")
+	awsSecret    = os.Getenv("AWS_SECRET_ACCESS_KEY")
 )
 
 func init() {
@@ -45,7 +47,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	db := NewDBConnection("postgres", dbInfo)
+	db := NewDynamoConnection(awsKeyID, awsSecret)
 	if err := db.Open(); err != nil {
 		log.Fatalln(err)
 	}

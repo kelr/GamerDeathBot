@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"regexp"
-	"time"
 )
 
 const (
@@ -37,7 +36,7 @@ func (p *Dispatcher) Dispatch(msg *IRCMessage) {
 	// Don't reply to self
 	if msg.Command == "PRIVMSG" && msg.Username != botNick {
 		// Log out the message to the db
-		p.db.InsertLog(time.Now(), msg.Channel, msg.Username, msg.Message)
+		p.db.InsertLog(msg)
 		if msg.Channel == "#"+botNick {
 			p.parseHomeCmd(msg)
 		} else {
@@ -112,7 +111,13 @@ func (p *Dispatcher) leaveChannel(username string) {
 		return
 	}
 
-	go p.db.DeleteChannelUser(username)
+	id, err := p.api.GetChannelID(username)
+	if err != nil {
+		fmt.Println("ERROR: API Can't get ID for: " + username)
+		return
+	}
+
+	go p.db.DeleteChannelID(id)
 	p.manager.UnregisterChannel(username)
 	homeChannel.SendUnregistered(username)
 }

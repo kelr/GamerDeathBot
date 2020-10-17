@@ -40,13 +40,15 @@ type IRC interface {
 
 // IRCMessage represents parsed out fields of a message from IRC
 type IRCMessage struct {
+	ChannelID string
+	// Microseconds since epoch
+	Timestamp   int64
 	Channel     string
 	Username    string
 	Message     string
 	Command     string
 	CommandArgs []string
 	Tags        IRCTags
-	Timestamp   time.Time
 }
 
 // IRCTags represents a string:string map of IRC Tags
@@ -56,8 +58,6 @@ type IRCTags map[string]string
 type IrcConnection struct {
 	host           string
 	port           string
-	login          string
-	token          string
 	conn           net.Conn
 	isConnected    bool
 	txQueue        chan string
@@ -71,8 +71,6 @@ func NewIRCConnection(host string, port string) *IrcConnection {
 	return &IrcConnection{
 		host:           host,
 		port:           port,
-		login:          "",
-		token:          "",
 		conn:           nil,
 		isConnected:    false,
 		txQueue:        make(chan string, txQueueSize),
@@ -238,7 +236,7 @@ func parseIRCMessage(msg string) (*IRCMessage, error) {
 
 	ircMessage := &IRCMessage{
 		Tags:      IRCTags{},
-		Timestamp: time.Now().UTC(),
+		Timestamp: time.Now().UnixNano() / 1000,
 	}
 
 	// Parse out tags if they exist
@@ -266,13 +264,19 @@ func parseIRCMessage(msg string) (*IRCMessage, error) {
 	if split[0] == "" {
 		return nil, errors.New("IRC Error: Parsing failed, missing IRC Command: " + message)
 	}
-	ircMessage.Message = split[1]
+	if len(split) == 2 {
+		ircMessage.Message = split[1]
+	}
 
 	// Parse out the command and any args
 	commands := strings.Split(split[0], " ")
 	ircMessage.Command = commands[0]
 	ircMessage.Channel = parseChannel(commands)
 	ircMessage.CommandArgs = commands[1:]
+
+	if id, ok := ircMessage.Tags["room-id"]; ok {
+		ircMessage.ChannelID = id
+	}
 
 	return ircMessage, nil
 }
@@ -329,6 +333,7 @@ func parseUsername(msg string) string {
 }
 
 func prettyPrintIRC(msg IRCMessage) {
+	fmt.Println("ChannelID:", msg.ChannelID)
 	fmt.Println("Timestamp:", msg.Timestamp)
 	fmt.Println("Channel:", msg.Channel)
 	fmt.Println("Command:", msg.Command)
